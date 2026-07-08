@@ -63,10 +63,11 @@ function avatarColor(a: Addr[]): string {
   return AV_COLORS[h % AV_COLORS.length];
 }
 
-export function MailClient({ owner, accounts }: { owner: string; accounts: Account[] }) {
-  const [account, setAccount] = useState(accounts[0]?.accountId ?? "");
+export function MailClient({ owner, accounts, initialAccount, initialFolder, initialEmail }: { owner: string; accounts: Account[]; initialAccount?: string; initialFolder?: string; initialEmail?: string }) {
+  const resolvedInitialAccount = (initialAccount && accounts.some((a) => a.accountId === initialAccount)) ? initialAccount : accounts[0]?.accountId ?? "";
+  const [account, setAccount] = useState(resolvedInitialAccount);
   const [folders, setFolders] = useState<Mailbox[]>([]);
-  const [active, setActive] = useState("");
+  const [active, setActive] = useState(initialFolder ?? "");
   const [emails, setEmails] = useState<Summary[]>([]);
   const [total, setTotal] = useState(0);
   const [sel, setSel] = useState<Full | null>(null);
@@ -76,6 +77,16 @@ export function MailClient({ owner, accounts }: { owner: string; accounts: Accou
   const [showFolders, setShowFolders] = useState(false);
   const [admin, setAdmin] = useState(false);
   const [settings, setSettings] = useState(false);
+  const initialEmailDone = useRef(false);
+
+  const syncUrl = useCallback((acc: string, fld: string, emailId?: string) => {
+    const p = new URLSearchParams();
+    if (acc) p.set("account", acc);
+    if (fld) p.set("folder", fld);
+    if (emailId) p.set("email", emailId);
+    const qs = p.toString();
+    window.history.replaceState(null, "", "/mail" + (qs ? "?" + qs : ""));
+  }, []);
 
   const loadFolders = useCallback(async (acc: string) => {
     if (!acc) return;
@@ -83,9 +94,13 @@ export function MailClient({ owner, accounts }: { owner: string; accounts: Accou
     const r = await fetch(`/api/mail/mailboxes?account=${acc}`).then((x) => x.json());
     if (!r.ok) return;
     setFolders(r.mailboxes);
-    const inbox = r.mailboxes.find((m: Mailbox) => m.role === "inbox") ?? r.mailboxes[0];
-    setActive(inbox ? inbox.id : "");
-  }, []);
+    if (initialFolder && r.mailboxes.some((m: Mailbox) => m.id === initialFolder)) {
+      setActive(initialFolder);
+    } else {
+      const inbox = r.mailboxes.find((m: Mailbox) => m.role === "inbox") ?? r.mailboxes[0];
+      setActive(inbox ? inbox.id : "");
+    }
+  }, [initialFolder]);
 
   const loadList = useCallback(async (acc: string, mb: string) => {
     if (!acc || !mb) return;
@@ -97,6 +112,14 @@ export function MailClient({ owner, accounts }: { owner: string; accounts: Accou
 
   useEffect(() => { if (account) loadFolders(account); }, [account, loadFolders]);
   useEffect(() => { if (account && active) loadList(account, active); }, [account, active, loadList]);
+
+  useEffect(() => { syncUrl(account, active, sel?.id); }, [account, active, sel, syncUrl]);
+
+  useEffect(() => {
+    if (initialEmailDone.current || !initialEmail || !emails.length) return;
+    initialEmailDone.current = true;
+    if (emails.some((e) => e.id === initialEmail)) openEmail(initialEmail);
+  }, [emails, initialEmail]); // eslint-disable-line react-hooks/exhaustive-deps
 
   async function openEmail(id: string) {
     setLoadingMsg(true);
