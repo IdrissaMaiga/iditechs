@@ -77,7 +77,7 @@ const projects: Project[] = [
     id: "neptun-api",
     title: "Neptun API",
     shortDesc:
-      "The most complete Python wrapper for Hungary's Neptun university system — 1,100+ endpoints reverse-engineered across 75+ controllers.",
+      "The most complete Python wrapper for Hungary's Neptun university system: 1,100+ endpoints reverse-engineered across 75+ controllers.",
     description:
       "A comprehensive Python library that reverse-engineers the Angular web client of Hungary's Neptun university management system. Covers 25+ functional areas including messaging (18+ methods), calendar (29), courses (60+), exams (30+), grades (21), financials (50+), and more. Features automated JWT authentication with transparent token refresh, Playwright-based survey automation, and MCP server support for AI assistant integration.",
     techStack: ["Python", "Playwright", "MCP Protocol"],
@@ -86,7 +86,7 @@ const projects: Project[] = [
       "Automated JWT authentication with token refresh",
       "MCP server for Claude Desktop and Cursor integration",
       "Playwright-based automated survey filling",
-      "Support for multiple Hungarian universities (Obuda, BME, ELTE)",
+      "Support for multiple Hungarian universities (Óbuda, BME, ELTE)",
       "Modular pip installation with optional extras",
     ],
     challenges: [
@@ -140,7 +140,7 @@ const projects: Project[] = [
     shortDesc:
       "Automated BUY-only grid trading bot for XAUUSD on MetaTrader 5 with real-time dashboard and tick-based backtester.",
     description:
-      "A sophisticated grid-trading strategy bot for gold (XAUUSD) on MetaTrader 5. Uses pure grid mechanics — no indicators, no prediction. Features automatic pause/resume after stop-loss events, a real-time web dashboard for monitoring, a tick-based backtester using real MT5 data, and a comprehensive test suite with 32 passing tests.",
+      "A sophisticated grid-trading strategy bot for gold (XAUUSD) on MetaTrader 5. Uses pure grid mechanics, no indicators and no prediction. Features automatic pause/resume after stop-loss events, a real-time web dashboard for monitoring, a tick-based backtester using real MT5 data, and a comprehensive test suite with 32 passing tests.",
     techStack: ["Python", "MetaTrader 5", "WebSockets", "HTML/CSS"],
     features: [
       "Pure grid mechanics trading strategy",

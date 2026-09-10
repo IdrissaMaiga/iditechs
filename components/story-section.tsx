@@ -56,7 +56,7 @@ const techHighlights = [
 
 const timelineNodes = [
   { label: "Bamako, Mali", sub: "Born & raised", color: "#f59e0b", year: "2002", icon: <FiMapPin className="w-3.5 h-3.5" /> },
-  { label: "USA — YES Program", sub: "Cultural exchange scholar", color: "#10b981", year: "2019", icon: <FiGlobe className="w-3.5 h-3.5" /> },
+  { label: "USA (YES Program)", sub: "Cultural exchange scholar", color: "#10b981", year: "2019", icon: <FiGlobe className="w-3.5 h-3.5" /> },
   { label: "Budapest", sub: "Relocated to Hungary", color: "#3b82f6", year: "2023", icon: <FiMapPin className="w-3.5 h-3.5" /> },
   { label: "Óbuda University", sub: "BSc Computer Software Eng.", color: "#8b5cf6", year: "2023", icon: <FiBookOpen className="w-3.5 h-3.5" /> },
   { label: "EISMEA", sub: "Full Stack Engineer", color: "#06b6d4", year: "2025", icon: <FiBriefcase className="w-3.5 h-3.5" /> },
@@ -148,7 +148,7 @@ export default function StorySection() {
               <div className="absolute inset-0 bg-gradient-to-br from-blue-500/5 via-transparent to-purple-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-700" />
 
               <div className="relative z-10">
-                {/* Profile photo in glowing ring — links to LinkedIn */}
+                {/* Profile photo in glowing ring, links to LinkedIn */}
                 <div className="flex justify-center mb-6">
                   <a
                     href="https://www.linkedin.com/in/idrissa-maiga-16581b245/"
@@ -339,8 +339,8 @@ export default function StorySection() {
                         integration.
                       </p>
                       <p>
-                        Currently pursuing B.Sc. in Computer Software Engineering
-                        at Obuda University (GPA: 8.7/10) while maintaining an
+                        Currently pursuing BSc in Computer Software Engineering
+                        at Óbuda University (GPA: 8.7/10) while maintaining an
                         active development portfolio. Multilingual professional
                         fluent in English, French, and Bambara.
                       </p>
@@ -369,7 +369,7 @@ export default function StorySection() {
                         </h4>
                         <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mb-2">
                           <span className="text-blue-400 text-sm font-medium">
-                            Obuda University
+                            Óbuda University
                           </span>
                           <span className="text-gray-600">|</span>
                           <span className="flex items-center text-gray-500 text-sm">
@@ -397,7 +397,7 @@ export default function StorySection() {
                                   {cert.name}
                                 </span>
                                 <span className="text-gray-500 text-sm ml-1.5">
-                                  -- {cert.desc}
+                                  &middot; {cert.desc}
                                 </span>
                               </div>
                             </li>

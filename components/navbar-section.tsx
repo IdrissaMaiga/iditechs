@@ -189,7 +189,7 @@ export default function Navbar() {
 
         {/* Action Buttons */}
         <div className="flex items-center space-x-1.5 sm:space-x-2">
-          {/* Social Links — always visible */}
+          {/* Social Links, always visible */}
           <a
             href={GITHUB_URL}
             target="_blank"
