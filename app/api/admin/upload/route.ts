@@ -21,32 +21,74 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ error: "GEMINI_API_KEY not configured" }, { status: 500 });
       }
 
-      const geminiRes = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/imagen-4.0-fast-generate-001:predict?key=${geminiKey}`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            instances: [{ prompt }],
-            parameters: { sampleCount: 1, aspectRatio: "16:9" },
-          }),
-        }
-      );
+      // Imagen `:predict` models were retired from the Gemini API. Native image
+      // generation now goes through `generateContent` on the Gemini image models.
+      // Try the best model first, then fall back to the faster ones.
+      const models = [
+        process.env.GEMINI_IMAGE_MODEL,
+        "gemini-3-pro-image",
+        "gemini-3.1-flash-image",
+        "gemini-2.5-flash-image",
+      ].filter((m, i, arr): m is string => !!m && arr.indexOf(m) === i);
 
-      if (!geminiRes.ok) {
-        console.error("Gemini error:", geminiRes.status, await geminiRes.text());
-        return NextResponse.json({ error: "Image generation failed" }, { status: 500 });
+      let base64: string | undefined;
+      let mimeType = "image/png";
+      let lastError = "";
+
+      for (const model of models) {
+        let geminiRes: Response;
+        try {
+          geminiRes = await fetch(
+            `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${geminiKey}`,
+            {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                contents: [{ parts: [{ text: prompt }] }],
+                generationConfig: {
+                  responseModalities: ["IMAGE"],
+                  imageConfig: { aspectRatio: "16:9" },
+                },
+              }),
+            }
+          );
+        } catch (err) {
+          // Network-level failure (DNS, connect timeout). Try the next model.
+          lastError = `${model}: ${err instanceof Error ? err.message : String(err)}`;
+          console.error("Gemini error:", lastError);
+          continue;
+        }
+
+        if (!geminiRes.ok) {
+          lastError = `${model}: ${geminiRes.status} ${(await geminiRes.text()).slice(0, 300)}`;
+          console.error("Gemini error:", lastError);
+          continue;
+        }
+
+        const geminiData = await geminiRes.json();
+        const parts: Array<{ inlineData?: { data?: string; mimeType?: string } }> =
+          geminiData.candidates?.[0]?.content?.parts ?? [];
+        const img = parts.find((p) => p.inlineData?.data);
+        if (img?.inlineData?.data) {
+          base64 = img.inlineData.data;
+          mimeType = img.inlineData.mimeType || mimeType;
+          console.log("Image generated with", model);
+          break;
+        }
+        lastError = `${model}: no image in response`;
+        console.error("Gemini error:", lastError);
       }
 
-      const geminiData = await geminiRes.json();
-      const base64 = geminiData.predictions?.[0]?.bytesBase64Encoded;
       if (!base64) {
-        return NextResponse.json({ error: "No image returned from Gemini" }, { status: 500 });
+        return NextResponse.json({ error: `Image generation failed (${lastError})` }, { status: 500 });
       }
 
       const imageBuffer = Buffer.from(base64, "base64");
-      const key = `blog/${filename || `generated-${Date.now()}.png`}`;
-      const url = await uploadToR2(key, imageBuffer, "image/png");
+      // Gemini usually returns JPEG; make the stored extension match the real format.
+      const ext = mimeType === "image/jpeg" ? "jpg" : mimeType === "image/webp" ? "webp" : "png";
+      const base = (filename || `generated-${Date.now()}`).replace(/\.(png|jpe?g|webp)$/i, "");
+      const key = `blog/${base}.${ext}`;
+      const url = await uploadToR2(key, imageBuffer, mimeType);
 
       return NextResponse.json({ success: true, url, key });
     }

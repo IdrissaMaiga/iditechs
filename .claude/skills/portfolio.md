@@ -1,12 +1,11 @@
-# Idrissa's Mega Portfolio Skill (Project Copy)
+# Portfolio skill (pointer)
 
-This is the project-local copy. The canonical global version lives at `C:\Users\user\.claude\skills\mega-portfolio.md` and is accessible from any directory.
+The operational skill for this site is the global Claude Code skill `portfolio`:
 
-See the global skill for full documentation. This copy exists so the skill is also discoverable when working inside this project.
+- Skill: `C:\Users\user\.claude\skills\portfolio\SKILL.md` (invoke with `/portfolio`)
+- Reference: `C:\Users\user\.claude\skills\portfolio\reference.md`
+- CLI: `python "C:/Users/user/.claude/skills/portfolio/scripts/portfolio.py" --help`
 
-## Quick Reference
-- **Skill name**: Idrissa's Mega Portfolio Skill
-- **Global path**: `C:\Users\user\.claude\skills\mega-portfolio.md`
-- **Project dir**: `D:\Projects\Idrissamaigainfo`
-- **Live site**: https://idrissamaiga.iditechs.com
-- **Commands**: /publish, /deploy, /status, /linkedin, /generate-image, /edit-post, /delete-post
+It covers publishing posts straight to R2, Gemini cover images, LinkedIn sharing, editing/renaming/deleting posts, health checks, deploys, LinkedIn re-auth, adding projects, and the currently known problems (admin key drift, dead SMTP host, uncommitted image-route fix, retired LinkedIn API version).
+
+This file is only a pointer so the skill is discoverable from inside the repo. Flat `.md` files in `.claude/skills/` are not loaded as skills; the real skill uses the `portfolio/SKILL.md` directory format.

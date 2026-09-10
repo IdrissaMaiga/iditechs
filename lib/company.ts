@@ -1,0 +1,24 @@
+// Legal identity of the business. Update NIF here when the DGI issues it; the company page,
+// the portfolio footer and the structured data all read from this object.
+export const company = {
+  brand: "IDITECHS",
+  legalForm: "Entreprise Individuelle",
+  owner: "Idrissa Maiga",
+  rccm: "ML-BKO-01-2026-A-05533",
+  nif: null as string | null,
+  address: "Kalabancoura, Commune V, Bamako, Mali",
+  phones: ["+223 77 37 47 82", "+223 84 02 71 37"],
+  whatsapp: "22377374782",
+  email: "contact@iditechs.com",
+  site: "https://iditechs.com",
+  portfolio: "https://idrissamaiga.iditechs.com",
+};
+
+export function legalLine(lang: "fr" | "en" = "fr") {
+  const nif = company.nif
+    ? `NIF ${company.nif}`
+    : lang === "fr"
+      ? "NIF : en cours d'attribution"
+      : "NIF: pending";
+  return `${company.brand} · ${company.legalForm} · RCCM ${company.rccm} · ${nif} · ${company.address}`;
+}

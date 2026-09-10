@@ -6,6 +6,7 @@ import SessionProvider from "@/components/session-provider";
 import ChatButton from "@/components/chat-button";
 import ActionListener from "@/components/action-listener";
 import Navbar from "@/components/navbar-section";
+import HideOnCompany from "@/components/hide-on-company";
 import PageTracker from "@/components/page-tracker";
 
 // Font configuration with responsive weights
@@ -127,9 +128,9 @@ export default function RootLayout({
       <body className={`${inter.variable} ${spaceGrotesk.variable} font-sans antialiased`}>
         <SessionProvider>
           <ThemeProvider attribute="class" defaultTheme="dark" enableSystem={false}>
-            <Navbar />
+            <HideOnCompany><Navbar /></HideOnCompany>
             {children}
-            <ChatButton />
+            <HideOnCompany><ChatButton /></HideOnCompany>
             <ActionListener />
             <PageTracker />
           </ThemeProvider>

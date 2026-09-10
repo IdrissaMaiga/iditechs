@@ -15,17 +15,23 @@ Next.js 14 portfolio with 3D (Three.js/R3F), AI chatbot (Gemini), R2-backed blog
 Blog posts are stored entirely on Cloudflare R2. No local MDX files.
 - **Index**: `blog/index.json` on R2 (post metadata array)
 - **Content**: `blog/posts/<slug>.json` on R2 (post content)
-- **Images**: `blog/<slug>.png` on R2 (cover images)
-- All CRUD via `/api/admin/blog` (reads/writes R2)
+- **Images**: `blog/<slug>.jpg` or `.png` on R2 (extension follows what Gemini returns; use the URL from the upload response)
+- All CRUD via `/api/admin/blog` (reads/writes R2), or directly against R2 with the Cloudflare API
 - Blog pages are `force-dynamic` (fetch from R2 on each request)
+- `index.json` must stay a plain JSON array; content is MDX (no raw `{ }` or `<tag` in prose)
 
 ## Common Tasks
 
+Use the `portfolio` skill (`/portfolio`, files in `C:\Users\user\.claude\skills\portfolio\`). Its `scripts/portfolio.py` publishes, generates images, shares to LinkedIn, edits and checks status without needing the production admin key.
+
 ### Publish a blog post
-1. Generate cover image: `POST /api/admin/upload` with `{"action":"generate-image","prompt":"...","filename":"slug.png"}`
-2. Create post: `POST /api/admin/blog` with title, content, tags, description, image (R2 URL)
-3. Share to LinkedIn: `POST /api/linkedin/share`
-4. No deploy needed for new posts (R2-backed, dynamic rendering)
+1. `python "C:/Users/user/.claude/skills/portfolio/scripts/portfolio.py" lint post.md`
+2. `... image "<prompt>" <slug>` (Gemini generateContent; Imagen `:predict` is retired)
+3. `... publish --slug <slug> --title ... --description ... --tags a,b --image <url> --content post.md` (writes R2 directly, no subscriber email)
+4. `... share --slug <slug> --text linkedin.md --mark`
+5. No deploy needed for new posts (R2-backed, dynamic rendering)
+
+Known: the production `ADMIN_API_KEY` differs from `.env.local` (all `/api/admin/*` calls to production return 401 until resynced), `SMTP_HOST` must be changed to `mail.iditechs.com` (old host no longer resolves), and `app/api/admin/upload/route.ts` carries an uncommitted fix for the retired Imagen model. See the skill for the fixes.
 
 ### Deploy (code changes only)
 ```bash

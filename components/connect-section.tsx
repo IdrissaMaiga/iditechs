@@ -19,6 +19,7 @@ import {
 import { FaXTwitter } from "react-icons/fa6";
 import FloatingCodeBlock from "@/components/floating-code-block";
 import ArtBg from "@/components/art-bg";
+import { legalLine } from "@/lib/company";
 
 /* ------------------------------------------------------------------ */
 /*  Data                                                               */
@@ -573,6 +574,7 @@ export default function ConnectSection() {
           <div className="border-t border-white/10 mt-8 pt-6 flex flex-col sm:flex-row justify-between items-center gap-3 text-center sm:text-left">
             <p className="text-gray-500 text-xs sm:text-sm">
               &copy; 2026 Idrissa Maiga. All rights reserved.
+              <span className="block text-gray-600 mt-1">{legalLine("en")}</span>
             </p>
             <p className="text-gray-600 text-xs sm:text-sm">
               Built with Next.js &amp; Tailwind CSS
