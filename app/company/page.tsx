@@ -5,6 +5,20 @@ export const metadata: Metadata = {
   title: "IDITECHS · Services informatiques à Bamako",
   description:
     "Sites web, logiciels métier, installation informatique et formation pour les écoles, commerces, cliniques, restaurants et ONG de Bamako. Devis sous 48 h, acompte 50 %, reçu à chaque paiement.",
+  // Without this the page inherits the portfolio's keywords (Java, React, Budapest...).
+  keywords: [
+    "création site web Bamako",
+    "développeur web Mali",
+    "site internet entreprise Bamako",
+    "logiciel de gestion Mali",
+    "boutique en ligne Bamako",
+    "installation informatique Bamako",
+    "formation informatique Mali",
+    "IDITECHS",
+  ],
+  authors: [{ name: company.brand, url: company.site }],
+  creator: company.brand,
+  publisher: company.brand,
   alternates: { canonical: company.site },
   openGraph: {
     type: "website",

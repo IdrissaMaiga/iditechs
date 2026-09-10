@@ -1,5 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Inter, Space_Grotesk } from "next/font/google";
+import { headers } from "next/headers";
+import { isCompanyHost } from "@/lib/company";
 import "./globals.css";
 import { ThemeProvider } from "@/components/theme-provider";
 import SessionProvider from "@/components/session-provider";
@@ -110,6 +112,11 @@ export default function RootLayout({
 }: {
   children: React.ReactNode;
 }) {
+  // On iditechs.com the middleware rewrites "/" to /company, so the browser path stays "/" and the
+  // pathname-based HideOnCompany never fires. Decide by Host here; HideOnCompany still covers
+  // /company reached directly on the portfolio host.
+  const company = isCompanyHost(headers().get("host"));
+
   return (
     <html lang="en" suppressHydrationWarning className="scroll-smooth dark">
       <head>
@@ -117,20 +124,32 @@ export default function RootLayout({
         <link rel="icon" href="/favicon.ico" />
         {/* Preconnect to Google Fonts */}
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-        {/* RSS Feed */}
-        <link rel="alternate" type="application/rss+xml" title="Idrissa Maiga Blog" href="/api/feed" />
-        {/* JSON-LD structured data */}
-        <script
-          type="application/ld+json"
-          dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
-        />
+        {!company && (
+          <>
+            {/* RSS Feed */}
+            <link rel="alternate" type="application/rss+xml" title="Idrissa Maiga Blog" href="/api/feed" />
+            {/* JSON-LD structured data */}
+            <script
+              type="application/ld+json"
+              dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+            />
+          </>
+        )}
       </head>
       <body className={`${inter.variable} ${spaceGrotesk.variable} font-sans antialiased`}>
         <SessionProvider>
           <ThemeProvider attribute="class" defaultTheme="dark" enableSystem={false}>
-            <HideOnCompany><Navbar /></HideOnCompany>
+            {!company && (
+              <HideOnCompany>
+                <Navbar />
+              </HideOnCompany>
+            )}
             {children}
-            <HideOnCompany><ChatButton /></HideOnCompany>
+            {!company && (
+              <HideOnCompany>
+                <ChatButton />
+              </HideOnCompany>
+            )}
             <ActionListener />
             <PageTracker />
           </ThemeProvider>
