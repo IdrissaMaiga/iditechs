@@ -69,7 +69,7 @@ const jsonLd = {
 
 export default function CompanyPage() {
   return (
-    <main className="min-h-screen bg-[#030712] text-gray-100">
+    <main lang="fr" className="min-h-screen bg-[#030712] text-gray-100">
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
 
       <header className="sticky top-0 z-20 border-b border-white/10 bg-[#030712]/90 backdrop-blur">
