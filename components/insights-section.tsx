@@ -114,7 +114,7 @@ export default function InsightsSection() {
   return (
     <section
       id="insights"
-      className="py-12 sm:py-16 lg:py-20 relative bg-[#070c1a] overflow-x-hidden"
+      className="py-12 sm:py-16 lg:py-20 relative bg-[#070c1a] overflow-x-clip"
     >
       <ArtBg variant="insights" />
 

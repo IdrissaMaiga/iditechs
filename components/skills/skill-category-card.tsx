@@ -28,7 +28,7 @@ export default function SkillCategoryCard({
       whileInView={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.7, ease: [0.25, 0.46, 0.45, 0.94] }}
       viewport={{ once: true, margin: "-60px" }}
-      className="group relative rounded-2xl border border-white/[0.08] bg-white/[0.04] backdrop-blur-md overflow-hidden transition-all duration-500 hover:border-white/[0.16] h-full"
+      className="group relative rounded-2xl border border-white/[0.08] bg-white/[0.04] backdrop-blur-md overflow-hidden transition-[border-color,box-shadow] duration-500 hover:border-white/[0.16] h-full"
       style={{ boxShadow: "none" }}
       onMouseEnter={(e) => {
         (e.currentTarget as HTMLDivElement).style.boxShadow = `0 0 30px ${color}12`;

@@ -11,7 +11,7 @@ import RoomFrame from "@/components/room-frame";
 
 export default function Home() {
   return (
-    <main className="min-h-screen relative overflow-x-hidden bg-[#020510]">
+    <main className="min-h-screen relative overflow-x-clip bg-[#020510]">
 
       <RoomFrame accent="blue">
         <HeroSection />

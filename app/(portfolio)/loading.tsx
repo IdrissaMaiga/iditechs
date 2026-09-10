@@ -1,9 +1,8 @@
-// Suspense fallback for the portfolio routes. Deliberately minimal: the previous
-// version faked a progress bar on a 120ms interval with invented status text, and
-// positioned 20 divs with Math.random() during render, which mismatched on hydration.
+// Suspense fallback for the portfolio routes. In normal flow rather than a fixed
+// overlay so the navbar (rendered by the layout) stays put while a page loads.
 export default function Loading() {
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#030712]">
+    <div className="flex min-h-screen items-center justify-center bg-[#030712]">
       <div
         className="h-8 w-8 animate-spin rounded-full border-2 border-white/15 border-t-blue-400"
         role="status"

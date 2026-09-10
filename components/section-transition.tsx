@@ -66,8 +66,10 @@ function DoubleDoor() {
   const lightSpill = useTransform(scrollYProgress, [0.2, 0.45], [0, 0.6]);
 
   return (
-    <div ref={ref} className="relative w-full h-[12vh] pointer-events-none z-30">
-      <motion.div style={{ opacity: containerOpacity }} className="absolute inset-0 sticky top-0">
+    <div ref={ref} className="relative w-full h-[12vh] pointer-events-none z-30 overflow-hidden">
+      {/* `absolute` only: this used to also carry `sticky`, which wins in Tailwind's output
+          and collapses the box to 0px because every child is absolutely positioned. */}
+      <motion.div style={{ opacity: containerOpacity }} className="absolute inset-0">
         <DoorFrame>
           {/* Left panel */}
           <motion.div style={{ x: leftX }} className="absolute inset-y-[3px] left-[3px] right-1/2 origin-left">
@@ -115,16 +117,18 @@ function DoubleDoor() {
 
 function SingleDoor() {
   const { ref, scrollYProgress } = useScrollSection();
-  const rotateY = useTransform(scrollYProgress, [0.15, 0.55], [0, -100]);
+  // Positive rotation swings the free edge away from the viewer, so in perspective the
+  // panel shrinks into the frame instead of growing past it; 90deg is edge-on.
+  const rotateY = useTransform(scrollYProgress, [0.15, 0.55], [0, 90]);
   const containerOpacity = useTransform(scrollYProgress, [0.5, 0.65], [1, 0]);
   const glow = useTransform(scrollYProgress, [0.2, 0.45], [0, 0.8]);
 
   return (
-    <div ref={ref} className="relative w-full h-[10vh] pointer-events-none z-30" style={{ perspective: "1500px" }}>
+    <div ref={ref} className="relative w-full h-[10vh] pointer-events-none z-30 overflow-hidden">
       <motion.div style={{ opacity: containerOpacity }} className="absolute inset-0">
         <DoorFrame>
           <motion.div
-            style={{ rotateY, transformOrigin: "left center" }}
+            style={{ rotateY, transformOrigin: "left center", transformPerspective: 1500, backfaceVisibility: "hidden" }}
             className="absolute inset-[3px]"
           >
             <DoorPanel />
@@ -185,21 +189,15 @@ function Iris() {
   const clipRadius = useTransform(scrollYProgress, [0.15, 0.55], [0, 150]);
   const containerOpacity = useTransform(scrollYProgress, [0.5, 0.65], [1, 0]);
   const ringGlow = useTransform(scrollYProgress, [0.2, 0.4], [0, 1]);
-  const ringScale = useTransform(scrollYProgress, [0.2, 0.55], [0.3, 2]);
-  const clipPath = useTransform(clipRadius, (v: number) => `circle(${v}% at 50% 50%)`);
+  const ringScale = useTransform(scrollYProgress, [0.2, 0.55], [0.4, 1.2]);
 
   return (
-    <div ref={ref} className="relative w-full h-[10vh] pointer-events-none z-30">
+    <div ref={ref} className="relative w-full h-[10vh] pointer-events-none z-30 overflow-hidden">
       <motion.div style={{ opacity: containerOpacity }} className="absolute inset-0">
         <DoorFrame>
           {/* Solid panel with circular cutout that grows */}
           <motion.div className="absolute inset-[3px]">
             <div className="absolute inset-0 bg-gradient-to-b from-[#151b30] via-[#111627] to-[#0d1220]" />
-            {/* The hole that opens */}
-            <motion.div
-              style={{ clipPath }}
-              className="absolute inset-0 bg-transparent"
-            />
             {/* Mask: cover everything except the growing circle */}
             <motion.div
               style={{
@@ -219,7 +217,7 @@ function Iris() {
             style={{ opacity: ringGlow, scale: ringScale }}
             className="absolute inset-0 flex items-center justify-center pointer-events-none"
           >
-            <div className="w-24 h-24 rounded-full border-2 border-cyan-400/40 shadow-[0_0_20px_rgba(6,182,212,0.2),inset_0_0_20px_rgba(6,182,212,0.1)]" />
+            <div className="w-16 h-16 rounded-full border-2 border-cyan-400/40 shadow-[0_0_20px_rgba(6,182,212,0.2),inset_0_0_20px_rgba(6,182,212,0.1)]" />
           </motion.div>
         </DoorFrame>
       </motion.div>

@@ -88,7 +88,7 @@ export default function StorySection() {
   return (
     <section
       id="story"
-      className="py-12 sm:py-16 lg:py-20 relative bg-[#080d1c] overflow-x-hidden"
+      className="py-12 sm:py-16 lg:py-20 relative bg-[#080d1c] overflow-x-clip"
     >
       <ArtBg variant="story" />
 
@@ -224,7 +224,7 @@ export default function StorySection() {
                 {/* Vertical connecting line (mobile) / horizontal (desktop) */}
                 <div className="absolute top-0 bottom-0 left-[19px] w-px bg-gradient-to-b from-amber-500/30 via-blue-500/30 to-pink-500/30 sm:hidden" />
                 <motion.div
-                  className="absolute top-5 left-0 right-0 h-px hidden sm:block"
+                  className="absolute top-5 left-0 right-0 h-px hidden sm:block origin-left"
                   style={{ background: "linear-gradient(90deg, #f59e0b30, #3b82f630, #8b5cf630, #06b6d430, #ec489930)" }}
                   initial={{ scaleX: 0 }}
                   whileInView={{ scaleX: 1 }}
@@ -248,7 +248,7 @@ export default function StorySection() {
                         {/* Node circle */}
                         <div className="relative z-10 flex-shrink-0 sm:mb-4">
                           <motion.div
-                            className="w-10 h-10 rounded-full flex items-center justify-center border-2 transition-all duration-300"
+                            className="w-10 h-10 rounded-full flex items-center justify-center border-2"
                             style={{
                               borderColor: node.color,
                               background: `${node.color}15`,

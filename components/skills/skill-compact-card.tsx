@@ -24,7 +24,7 @@ export default function SkillCompactCard({
       transition={{ duration: 0.6, ease: [0.25, 0.46, 0.45, 0.94] }}
       viewport={{ once: true, margin: "-40px" }}
       whileHover={{ scale: 1.03 }}
-      className="group relative rounded-xl border border-white/[0.08] bg-white/[0.04] backdrop-blur-md overflow-hidden transition-all duration-400 hover:border-white/[0.16] h-full"
+      className="group relative rounded-xl border border-white/[0.08] bg-white/[0.04] backdrop-blur-md overflow-hidden transition-[border-color,box-shadow] duration-300 hover:border-white/[0.16] h-full"
       style={{ boxShadow: "none" }}
       onMouseEnter={(e) => {
         (e.currentTarget as HTMLDivElement).style.boxShadow = `0 0 24px ${color}15`;

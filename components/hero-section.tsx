@@ -17,10 +17,11 @@ export default function HeroSection() {
   const contentY = useTransform(scrollYProgress, [0, 1], [0, -150]);
   const contentOpacity = useTransform(scrollYProgress, [0, 0.5], [1, 0]);
   const contentScale = useTransform(scrollYProgress, [0, 0.5], [1, 0.9]);
-
+  // Faded-out content must not stay clickable underneath the next section.
+  const contentPointer = useTransform(contentOpacity, (o) => (o < 0.1 ? "none" : "auto"));
 
   return (
-    <section ref={sectionRef} id="home" className="min-h-screen relative overflow-x-hidden">
+    <section ref={sectionRef} id="home" className="min-h-screen relative overflow-x-clip">
       <div className="absolute inset-0 z-0 bg-[#030712]" />
       <ArtBg variant="hero" />
       <div className="absolute inset-0 z-[2] bg-gradient-to-r from-[#030712]/80 via-[#030712]/30 to-transparent pointer-events-none" />
@@ -31,7 +32,8 @@ export default function HeroSection() {
         className="relative z-[4] container mx-auto px-4 md:px-6 min-h-screen flex items-center pt-20 pointer-events-none"
       >
         <motion.div
-          className="w-full md:w-2/3 lg:w-3/5 max-w-2xl pointer-events-auto"
+          className="w-full md:w-2/3 lg:w-3/5 max-w-2xl"
+          style={{ pointerEvents: contentPointer }}
           initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 1, delay: 0.5 }}
@@ -131,18 +133,19 @@ export default function HeroSection() {
       {/* Scroll indicator */}
       <motion.div
         className="absolute bottom-12 left-1/2 -translate-x-1/2 z-[4] pointer-events-none"
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ delay: 2 }}
         style={{ opacity: contentOpacity }}
       >
-        <motion.div
-          animate={{ y: [0, 8, 0] }}
-          transition={{ repeat: Infinity, duration: 2, ease: "easeInOut" }}
-        >
-          <div className="w-6 h-10 rounded-full border-2 border-white/20 flex items-start justify-center p-2">
-            <div className="w-1 h-2.5 bg-white/50 rounded-full" />
-          </div>
+        {/* Mount fade and scroll fade live on separate elements: driving one opacity
+            from both `animate` and a scroll-linked style value made them fight. */}
+        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 2 }}>
+          <motion.div
+            animate={{ y: [0, 8, 0] }}
+            transition={{ repeat: Infinity, duration: 2, ease: "easeInOut" }}
+          >
+            <div className="w-6 h-10 rounded-full border-2 border-white/20 flex items-start justify-center p-2">
+              <div className="w-1 h-2.5 bg-white/50 rounded-full" />
+            </div>
+          </motion.div>
         </motion.div>
       </motion.div>
 

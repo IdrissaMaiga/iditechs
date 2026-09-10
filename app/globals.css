@@ -190,14 +190,16 @@
     @apply translate-y-[-6px];
   }
 
-  /* Project grid hover dim: dim siblings when one card is hovered */
+  /* Dim sibling project cards only while a card itself is hovered. Matching on
+     `.project-grid:hover` also fired in the gaps between cards, dimming all of them. */
   .project-card-wrapper {
-    transition: opacity 0.3s ease, filter 0.3s ease;
+    transition: opacity 0.3s ease;
   }
 
-  .project-grid:hover .project-card-wrapper:not(:hover) {
-    opacity: 0.5;
-    filter: blur(1px);
+  @media (hover: hover) {
+    .project-grid:has(.project-card-wrapper:hover) .project-card-wrapper:not(:hover) {
+      opacity: 0.55;
+    }
   }
 
   /* Scrollbars — light */

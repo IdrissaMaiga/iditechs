@@ -1,9 +1,23 @@
 "use client";
 import { motion, useInView, useReducedMotion } from "framer-motion";
-import { useMemo, useRef } from "react";
+import { useMemo, useRef, type ReactNode } from "react";
 
 interface Props {
   variant: "hero" | "story" | "projects" | "skills" | "insights" | "connect";
+}
+
+// Animated layers mount whenever their section nears the viewport; a short fade hides the pop.
+function Fade({ children }: { children: ReactNode }) {
+  return (
+    <motion.div
+      className="absolute inset-0"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ duration: 0.8 }}
+    >
+      {children}
+    </motion.div>
+  );
 }
 
 function Starfield({ count = 60, maxSize = 2.5 }: { count?: number; maxSize?: number }) {
@@ -113,20 +127,21 @@ function LightRays({ count = 3, angle = -20 }: { count?: number; angle?: number 
   );
 }
 
+const ORB_COLORS = [
+  "rgba(80,140,255,0.2)",
+  "rgba(60,120,220,0.18)",
+  "rgba(100,160,255,0.15)",
+  "rgba(70,130,255,0.12)",
+];
+
 function GlowOrbs({ count = 12 }: { count?: number }) {
-  const colors = [
-    "rgba(80,140,255,0.2)",
-    "rgba(60,120,220,0.18)",
-    "rgba(100,160,255,0.15)",
-    "rgba(70,130,255,0.12)",
-  ];
   const orbs = useMemo(
     () =>
       Array.from({ length: count }, (_, i) => ({
         x: `${(41 * i + 11) % 100}%`,
         y: `${(59 * i + 3) % 100}%`,
         size: 15 + (23 * i) % 70,
-        color: colors[i % colors.length],
+        color: ORB_COLORS[i % ORB_COLORS.length],
         dur: 5 + (7 * i) % 8,
         delay: (1.3 * i) % 6,
       })),
@@ -411,7 +426,7 @@ export default function ArtBg({ variant }: Props) {
       />
 
       {active && (
-        <>
+        <Fade>
           <AuroraBand />
           <Starfield count={isHero ? 50 : 35} maxSize={isHero ? 3 : 2} />
           <FloatingShapes count={isHero ? 5 : 3} />
@@ -419,7 +434,7 @@ export default function ArtBg({ variant }: Props) {
           <Nebulae count={isHero ? 4 : 2} />
           <CodeSymbols count={isHero ? 8 : variant === "skills" ? 6 : 4} />
           <CodeRain columns={isHero ? 4 : 3} />
-        </>
+        </Fade>
       )}
 
       {/* Variant-specific elements */}
@@ -427,12 +442,12 @@ export default function ArtBg({ variant }: Props) {
         <>
           <Moon />
           {active && (
-            <>
+            <Fade>
               <ShootingStar delay={3} />
               <ShootingStar delay={9} />
               <LightRays count={3} angle={-15} />
               <LargeNebulae count={4} />
-            </>
+            </Fade>
           )}
           <div
             className="absolute bottom-[15%] left-0 right-0 h-[20%]"
@@ -445,10 +460,10 @@ export default function ArtBg({ variant }: Props) {
       {variant === "story" && (
         <>
           {active && (
-            <>
+            <Fade>
               <LightRays count={2} angle={-25} />
               <LargeNebulae count={3} />
-            </>
+            </Fade>
           )}
           <MountainSilhouette height="15%" />
         </>
@@ -457,10 +472,10 @@ export default function ArtBg({ variant }: Props) {
       {variant === "projects" && (
         <>
           {active && (
-            <>
+            <Fade>
               <LargeNebulae count={4} />
               <LightRays count={2} angle={-30} />
-            </>
+            </Fade>
           )}
           <div
             className="absolute rounded-full pointer-events-none"
@@ -479,10 +494,10 @@ export default function ArtBg({ variant }: Props) {
       {variant === "skills" && (
         <>
           {active && (
-            <>
+            <Fade>
               <LightRays count={2} angle={-10} />
               <LargeNebulae count={3} />
-            </>
+            </Fade>
           )}
           <div
             className="absolute rounded-full pointer-events-none"
@@ -501,10 +516,10 @@ export default function ArtBg({ variant }: Props) {
       {variant === "insights" && (
         <>
           {active && (
-            <>
+            <Fade>
               <ShootingStar delay={5} />
               <LargeNebulae count={3} />
-            </>
+            </Fade>
           )}
           <div
             className="absolute pointer-events-none"
@@ -524,10 +539,10 @@ export default function ArtBg({ variant }: Props) {
       {variant === "connect" && (
         <>
           {active && (
-            <>
+            <Fade>
               <LightRays count={2} angle={-20} />
               <LargeNebulae count={3} />
-            </>
+            </Fade>
           )}
           <MountainSilhouette height="18%" />
         </>

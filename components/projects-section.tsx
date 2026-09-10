@@ -322,7 +322,7 @@ export default function DetailedProjectsSection() {
   return (
     <section
       id="projects"
-      className="py-12 sm:py-16 lg:py-20 relative bg-[#050a16] overflow-x-hidden"
+      className="py-12 sm:py-16 lg:py-20 relative bg-[#050a16] overflow-x-clip"
     >
       <ArtBg variant="projects" />
 
@@ -375,15 +375,15 @@ export default function DetailedProjectsSection() {
         </motion.div>
 
         {/* ---- Project grid (6 cards) ---- */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 project-grid" style={{ perspective: "1200px" }}>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 project-grid">
           {projects.map((project, index) => (
             <div key={project.id} className="project-card-wrapper">
             <motion.div
               initial={{ opacity: 0, z: -100, rotateY: index % 2 === 0 ? -10 : 10 }}
               whileInView={{ opacity: 1, z: 0, rotateY: 0 }}
-              transition={{ duration: 0.7, delay: index * 0.1 }}
+              transition={{ duration: 0.7, delay: (index % 3) * 0.1 }}
               viewport={{ once: true, margin: "-80px" }}
-              style={{ transformStyle: "preserve-3d" }}
+              style={{ transformPerspective: 1200 }}
               onClick={() => openProject(project)}
               onKeyDown={(e) => {
                 if (e.key === "Enter" || e.key === " ") {
@@ -395,7 +395,7 @@ export default function DetailedProjectsSection() {
               tabIndex={0}
               aria-haspopup="dialog"
               aria-label={`${project.title}: open project details`}
-              className="group cursor-pointer bg-white/[0.03] backdrop-blur-md border border-white/[0.08] rounded-2xl overflow-hidden transition-all duration-300 hover:border-white/[0.15] hover:shadow-[0_0_30px_rgba(59,130,246,0.08)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400 focus-visible:ring-offset-2 focus-visible:ring-offset-[#030712]"
+              className="group cursor-pointer bg-white/[0.03] backdrop-blur-md border border-white/[0.08] rounded-2xl overflow-hidden transition-[border-color,box-shadow] duration-300 hover:border-white/[0.15] hover:shadow-[0_0_30px_rgba(59,130,246,0.08)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400 focus-visible:ring-offset-2 focus-visible:ring-offset-[#030712]"
             >
               {/* Card image */}
               <div className="relative h-48 overflow-hidden bg-[#0a0f1e]">
@@ -640,7 +640,7 @@ export default function DetailedProjectsSection() {
                               duration: 0.3,
                               delay: i * 0.06,
                             }}
-                            className="flex items-center gap-3 p-3.5 rounded-xl bg-white/[0.03] border border-white/[0.06] hover:border-blue-500/20 hover:bg-blue-500/[0.04] transition-all duration-300"
+                            className="flex items-center gap-3 p-3.5 rounded-xl bg-white/[0.03] border border-white/[0.06] hover:border-blue-500/20 hover:bg-blue-500/[0.04] transition-colors duration-300"
                           >
                             <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-blue-500/20 to-purple-500/20 flex items-center justify-center flex-shrink-0">
                               <FiServer className="w-4 h-4 text-blue-400" />

@@ -168,7 +168,7 @@ export default function ConnectSection() {
     <section
       ref={sectionRef}
       id="connect"
-      className="relative overflow-x-hidden bg-[#060a14]"
+      className="relative overflow-x-clip bg-[#060a14]"
     >
       <ArtBg variant="connect" />
 
@@ -561,7 +561,7 @@ export default function ConnectSection() {
                   }
                   whileHover={{ scale: 1.15, y: -2 }}
                   whileTap={{ scale: 0.95 }}
-                  className="p-2.5 rounded-full bg-white/5 text-gray-400 hover:text-white hover:bg-white/10 border border-white/5 hover:border-white/20 transition-all duration-200"
+                  className="p-2.5 rounded-full bg-white/5 text-gray-400 hover:text-white hover:bg-white/10 border border-white/5 hover:border-white/20 transition-colors duration-200"
                   aria-label={social.name}
                 >
                   <social.icon className="w-4 h-4 sm:w-5 sm:h-5" />

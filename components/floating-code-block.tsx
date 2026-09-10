@@ -57,7 +57,7 @@ export default function FloatingCodeBlock({
         onMouseLeave={handleMouseLeave}
         onClick={handleCopy}
         style={{ rotateX, rotateY, transformStyle: "preserve-3d" }}
-        className="w-[240px] rounded-lg overflow-hidden cursor-pointer group transition-all duration-300"
+        className="w-[240px] rounded-lg overflow-hidden cursor-pointer group"
         whileHover={{ scale: 1.05 }}
       >
         <div

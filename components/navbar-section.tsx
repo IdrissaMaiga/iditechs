@@ -94,7 +94,7 @@ export default function Navbar() {
       initial={{ y: -100, opacity: 0 }}
       animate={{ y: 0, opacity: 1 }}
       transition={{ duration: 0.6 }}
-      className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 safe-area-inset ${
+      className={`fixed top-0 left-0 right-0 z-50 transition-[padding,background-color,border-color,box-shadow] duration-300 safe-area-inset ${
         scrolled
           ? "py-3 bg-white/5 backdrop-blur-md border-b border-white/10 shadow-lg shadow-black/10"
           : "py-3 sm:py-4 bg-transparent"
@@ -271,9 +271,9 @@ export default function Navbar() {
             animate={{ opacity: 1, height: "auto" }}
             exit={{ opacity: 0, height: 0 }}
             transition={{ duration: 0.3 }}
-            className="xl:hidden max-h-[calc(100dvh-4rem)] overflow-y-auto overscroll-contain border-t border-white/10 bg-[#030712]/95 backdrop-blur-lg safe-area-inset"
+            className="xl:hidden overflow-hidden border-t border-white/10 bg-[#030712]/95 backdrop-blur-lg safe-area-inset"
           >
-            <nav className="container mx-auto px-4 py-4">
+            <nav className="container mx-auto px-4 py-4 max-h-[calc(100dvh-4rem)] overflow-y-auto overscroll-contain">
               <ul className="space-y-2">
                 {links.map((link) => (
                   <li key={link.name}>
