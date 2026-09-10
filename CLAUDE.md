@@ -15,12 +15,12 @@ Next.js 14 portfolio with 3D (Three.js/R3F), AI chatbot (Gemini), R2-backed blog
 This project also serves the IDITECHS company site. `middleware.ts` host-guards `iditechs.com` / `www.iditechs.com`: `/` and `/company` render the company page, every other path 308-redirects to `/`. The matcher excludes `_next/`, `api/`, `favicon.ico`, `robots.txt`, `sitemap.xml` and `logos/`. `www` 308s to the apex. `idrissamaiga.iditechs.com` is unaffected: blog, mail and stats exist only there.
 - **Page**: `app/company/page.tsx` (French landing page, OG metadata + JSON-LD)
 - **Identity**: `lib/company.ts` (brand, RCCM, NIF, address, phones, `isCompanyHost()`, `legalLine()` — the portfolio footer reads it too)
-- **Chrome**: `components/hide-on-company.tsx` hides the navbar and AI chat button on `/company`
+- **Chrome separation**: every portfolio page lives in the `app/(portfolio)` route group, whose `layout.tsx` owns the navbar, chat button, `loading.tsx` and Person JSON-LD. `app/company` sits outside that group, so it cannot inherit them. Do not move that chrome back into `app/layout.tsx` and do not add a root-level `loading.tsx`/`error.tsx`
 - **OG image**: `company/og.png` on R2
 - **SEO**: `app/robots.ts` and `app/sitemap.ts` branch on `isCompanyHost()`, so each host serves its own robots and sitemap. Both are dynamic (`ƒ`) as a result — that is intentional, do not make them static again
 - **DNS** (Cloudflare, DNS-only, never proxied): `A iditechs.com -> 76.76.21.21`, `CNAME www -> cname.vercel-dns.com`. Leave MX/TXT alone or `mail.iditechs.com` (72.62.150.35) breaks. DNS calls need `CLOUDFLARE_EMAIL` + `CLOUDFLARE_API_KEY`; the scoped `CLOUDFLARE_API_TOKEN` is R2-only
-- **A rewrite keeps the pathname.** On the company host `/` is rewritten to `/company`, so `usePathname()` still returns `/` and `hide-on-company.tsx` alone is not enough. Per-host decisions (navbar, chat button, RSS link, Person JSON-LD) are made in `app/layout.tsx` from `headers().get("host")`. That makes every page dynamic (`ƒ`) — intentional
-- Page metadata merges with the root layout's, so a non-portfolio route must override `keywords`/`authors`/`creator` or it inherits "Java Developer, React, Budapest"
+- **A rewrite keeps the pathname**, so `usePathname()` returns `/` on the company host and cannot be used to hide chrome there. That is why the split is structural (route group) rather than a runtime check
+- Page metadata merges down the layout chain, so anything in `app/layout.tsx` reaches iditechs.com. Portfolio metadata lives in `app/(portfolio)/layout.tsx`; the root keeps only `metadataBase` and a neutral title
 - Host routing lives in `middleware.ts`, not `next.config.mjs`. This repo is the only copy of the site; there is no standalone static version
 - Hosting decided 2026-09-10: this Vercel project. Vercel Pro or the VPS (same repo code) are fallbacks only
 
