@@ -21,6 +21,10 @@ const navLinks = [
   { name: "Blog", href: "/blog" },
 ];
 
+const SECTION_IDS = navLinks
+  .filter((link) => link.href.startsWith("/#"))
+  .map((link) => link.href.replace("/#", ""));
+
 export default function Navbar() {
   const pathname = usePathname();
   const [scrolled, setScrolled] = useState(false);
@@ -43,30 +47,47 @@ export default function Navbar() {
   }, [pathname]);
 
   useEffect(() => {
-    const handleScroll = () => {
-      const scrollPosition = window.scrollY;
-      setScrolled(scrollPosition > 10);
+    let ticking = false;
 
+    // Coalesced into one rAF: the rect loop forces layout, and it used to run on every scroll event.
+    const update = () => {
+      ticking = false;
+      setScrolled(window.scrollY > 10);
       if (pathname !== "/") return;
-
-      const sectionIds = navLinks
-        .filter((link) => link.href.startsWith("/#"))
-        .map((link) => link.href.replace("/#", ""));
-      for (const id of sectionIds) {
-        const element = document.getElementById(id);
-        if (element) {
-          const rect = element.getBoundingClientRect();
-          if (rect.top <= 100 && rect.bottom >= 100) {
-            setActiveSection(id);
-            break;
-          }
+      for (const id of SECTION_IDS) {
+        const rect = document.getElementById(id)?.getBoundingClientRect();
+        if (rect && rect.top <= 100 && rect.bottom >= 100) {
+          setActiveSection(id);
+          break;
         }
       }
     };
 
-    window.addEventListener("scroll", handleScroll);
-    return () => window.removeEventListener("scroll", handleScroll);
+    const onScroll = () => {
+      if (ticking) return;
+      ticking = true;
+      requestAnimationFrame(update);
+    };
+
+    window.addEventListener("scroll", onScroll, { passive: true });
+    update(); // deep links like /#projects start with the right state
+    return () => window.removeEventListener("scroll", onScroll);
   }, [pathname]);
+
+  // Lock the page behind the open mobile menu, and close it if the viewport
+  // grows past xl where the panel is hidden but the lock would persist.
+  useEffect(() => {
+    if (!mobileMenuOpen) return;
+    document.body.style.overflow = "hidden";
+    const onResize = () => {
+      if (window.innerWidth >= 1280) setMobileMenuOpen(false);
+    };
+    window.addEventListener("resize", onResize);
+    return () => {
+      document.body.style.overflow = "";
+      window.removeEventListener("resize", onResize);
+    };
+  }, [mobileMenuOpen]);
 
   return (
     <motion.header
@@ -94,6 +115,7 @@ export default function Navbar() {
                 src="/logos/id_.jpg"
                 alt="Idrissa Maiga"
                 fill
+                sizes="40px"
                 className="object-cover object-top"
               />
             </div>
@@ -249,7 +271,7 @@ export default function Navbar() {
             animate={{ opacity: 1, height: "auto" }}
             exit={{ opacity: 0, height: 0 }}
             transition={{ duration: 0.3 }}
-            className="xl:hidden border-t border-white/10 bg-[#030712]/95 backdrop-blur-lg safe-area-inset"
+            className="xl:hidden max-h-[calc(100dvh-4rem)] overflow-y-auto overscroll-contain border-t border-white/10 bg-[#030712]/95 backdrop-blur-lg safe-area-inset"
           >
             <nav className="container mx-auto px-4 py-4">
               <ul className="space-y-2">

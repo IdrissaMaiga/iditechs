@@ -38,6 +38,7 @@ export default function BlogCard({ post, index }: BlogCardProps) {
                   src={post.image}
                   alt={post.title}
                   fill
+                  sizes="(min-width: 768px) 496px, 100vw"
                   className="object-cover transition-transform duration-500 group-hover:scale-105 opacity-80 group-hover:opacity-100"
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-[#030712] via-[#030712]/40 to-transparent" />

@@ -379,6 +379,7 @@ export default function DetailedProjectsSection() {
                   src={project.image}
                   alt={project.title}
                   fill
+                  sizes="(min-width: 1024px) 33vw, (min-width: 768px) 50vw, 100vw"
                   className="object-cover transition-transform duration-500 group-hover:scale-105 opacity-80 group-hover:opacity-100"
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-[#030712] via-[#030712]/40 to-transparent" />
@@ -500,6 +501,7 @@ export default function DetailedProjectsSection() {
                   src={selectedProject.image}
                   alt={selectedProject.title}
                   fill
+                  sizes="(min-width: 640px) 640px, 100vw"
                   className="object-cover opacity-80"
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-[#0a0f1e] via-[#0a0f1e]/50 to-transparent" />

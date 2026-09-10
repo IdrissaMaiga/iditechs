@@ -163,6 +163,7 @@ export default function StorySection() {
                         src="/logos/id_.jpg"
                         alt="Idrissa Maiga"
                         fill
+                        sizes="128px"
                         className="object-cover object-top"
                       />
                     </div>

@@ -30,6 +30,7 @@ export default function BlogHeader({ post }: BlogHeaderProps) {
               src="/logos/id_.jpg"
               alt="Idrissa Maiga"
               fill
+              sizes="36px"
               className="object-cover object-top"
             />
           </div>

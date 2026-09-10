@@ -78,6 +78,8 @@ export default function EngagementBar({ slug, onCommentClick, compact }: Engagem
       <button
         onClick={handleLike}
         disabled={loading}
+        aria-pressed={liked}
+        aria-label={`Like this post (${likeCount} ${likeCount === 1 ? "like" : "likes"})`}
         className={`inline-flex items-center gap-1.5 transition-all ${
           compact ? "text-xs" : "text-sm"
         } ${
@@ -87,6 +89,8 @@ export default function EngagementBar({ slug, onCommentClick, compact }: Engagem
         }`}
       >
         <svg
+          aria-hidden="true"
+          focusable="false"
           className={compact ? "w-4 h-4" : "w-5 h-5"}
           fill={liked ? "currentColor" : "none"}
           viewBox="0 0 24 24"
@@ -99,17 +103,18 @@ export default function EngagementBar({ slug, onCommentClick, compact }: Engagem
             d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"
           />
         </svg>
-        {likeCount > 0 && <span>{likeCount}</span>}
+        {likeCount > 0 && <span aria-hidden="true">{likeCount}</span>}
       </button>
 
       <button
         onClick={handleComment}
+        aria-label={`View comments (${commentCount})`}
         className={`inline-flex items-center gap-1.5 text-gray-400 hover:text-blue-400 transition-all ${
           compact ? "text-xs" : "text-sm"
         }`}
       >
-        <FiMessageCircle className={compact ? "w-4 h-4" : "w-5 h-5"} />
-        {commentCount > 0 && <span>{commentCount}</span>}
+        <FiMessageCircle aria-hidden="true" className={compact ? "w-4 h-4" : "w-5 h-5"} />
+        {commentCount > 0 && <span aria-hidden="true">{commentCount}</span>}
       </button>
     </div>
   );

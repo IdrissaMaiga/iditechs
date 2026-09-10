@@ -1,24 +1,12 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useRef } from "react";
 import { motion, useScroll, useTransform } from "framer-motion";
 import { FiGithub, FiLinkedin, FiMail, FiArrowRight } from "react-icons/fi";
 import ArtBg from "@/components/art-bg";
-
-const titles = [
-  "Full Stack Engineer",
-  "Software Developer",
-  "AI Solutions Architect",
-  "Java Ecosystem Expert",
-  "Cloud-Native Developer",
-];
+import TypedTitle from "@/components/typed-title";
 
 export default function HeroSection() {
-  const [titleIndex, setTitleIndex] = useState(0);
-  const [displayedTitle, setDisplayedTitle] = useState("");
-  const [isDeleting, setIsDeleting] = useState(false);
-  const [typingSpeed, setTypingSpeed] = useState(150);
-
   const sectionRef = useRef<HTMLElement>(null);
 
   /* Framer-motion parallax: fade/scale/translate content as user scrolls away */
@@ -30,31 +18,6 @@ export default function HeroSection() {
   const contentOpacity = useTransform(scrollYProgress, [0, 0.5], [1, 0]);
   const contentScale = useTransform(scrollYProgress, [0, 0.5], [1, 0.9]);
 
-  useEffect(() => {
-    const currentTitle = titles[titleIndex];
-    const timer = setTimeout(() => {
-      if (isDeleting) {
-        setDisplayedTitle(currentTitle.substring(0, displayedTitle.length - 1));
-        setTypingSpeed(50);
-        if (displayedTitle.length === 0) {
-          setIsDeleting(false);
-          setTitleIndex((titleIndex + 1) % titles.length);
-          setTypingSpeed(150);
-        }
-      } else {
-        setDisplayedTitle(
-          currentTitle.substring(0, displayedTitle.length + 1)
-        );
-        if (displayedTitle.length === currentTitle.length) {
-          setTypingSpeed(2000);
-          setTimeout(() => setIsDeleting(true), 2000);
-        } else {
-          setTypingSpeed(150);
-        }
-      }
-    }, typingSpeed);
-    return () => clearTimeout(timer);
-  }, [displayedTitle, isDeleting, titleIndex, typingSpeed]);
 
   return (
     <section ref={sectionRef} id="home" className="min-h-screen relative overflow-x-hidden">
@@ -98,10 +61,7 @@ export default function HeroSection() {
           </h1>
 
           <div className="h-10 mb-8">
-            <span className="text-xl sm:text-2xl font-mono text-blue-300/90">
-              &gt; {displayedTitle}
-              <span className="inline-block w-0.5 h-6 bg-blue-400 ml-1 animate-pulse" />
-            </span>
+            <TypedTitle />
           </div>
 
           <p className="text-base sm:text-lg text-gray-300/80 mb-10 max-w-xl leading-relaxed">

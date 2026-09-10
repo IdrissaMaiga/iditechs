@@ -1,6 +1,6 @@
 "use client";
-import { motion } from "framer-motion";
-import { useMemo } from "react";
+import { motion, useInView, useReducedMotion } from "framer-motion";
+import { useMemo, useRef } from "react";
 
 interface Props {
   variant: "hero" | "story" | "projects" | "skills" | "insights" | "connect";
@@ -391,9 +391,16 @@ function Moon() {
 
 export default function ArtBg({ variant }: Props) {
   const isHero = variant === "hero";
+  const ref = useRef<HTMLDivElement>(null);
+  // Six ArtBg instances are mounted at once, each with dozens of repeat:Infinity
+  // animations. Only animate the section the visitor can actually see, and stop
+  // entirely for anyone who asked their OS for reduced motion.
+  const inView = useInView(ref, { margin: "300px 0px 300px 0px" });
+  const reduced = useReducedMotion();
+  const active = inView && !reduced;
 
   return (
-    <div className="absolute inset-0 overflow-hidden pointer-events-none z-[1]">
+    <div ref={ref} className="absolute inset-0 overflow-hidden pointer-events-none z-[1]">
       {/* Deep space gradient */}
       <div
         className="absolute inset-0"
@@ -403,24 +410,30 @@ export default function ArtBg({ variant }: Props) {
         }}
       />
 
-      <AuroraBand />
-
-      {/* Always present */}
-      <Starfield count={isHero ? 50 : 35} maxSize={isHero ? 3 : 2} />
-      <FloatingShapes count={isHero ? 5 : 3} />
-      <GlowOrbs count={isHero ? 8 : 5} />
-      <Nebulae count={isHero ? 4 : 2} />
-      <CodeSymbols count={isHero ? 8 : variant === "skills" ? 6 : 4} />
-      <CodeRain columns={isHero ? 4 : 3} />
+      {active && (
+        <>
+          <AuroraBand />
+          <Starfield count={isHero ? 50 : 35} maxSize={isHero ? 3 : 2} />
+          <FloatingShapes count={isHero ? 5 : 3} />
+          <GlowOrbs count={isHero ? 8 : 5} />
+          <Nebulae count={isHero ? 4 : 2} />
+          <CodeSymbols count={isHero ? 8 : variant === "skills" ? 6 : 4} />
+          <CodeRain columns={isHero ? 4 : 3} />
+        </>
+      )}
 
       {/* Variant-specific elements */}
       {variant === "hero" && (
         <>
           <Moon />
-          <ShootingStar delay={3} />
-          <ShootingStar delay={9} />
-          <LightRays count={3} angle={-15} />
-          <LargeNebulae count={4} />
+          {active && (
+            <>
+              <ShootingStar delay={3} />
+              <ShootingStar delay={9} />
+              <LightRays count={3} angle={-15} />
+              <LargeNebulae count={4} />
+            </>
+          )}
           <div
             className="absolute bottom-[15%] left-0 right-0 h-[20%]"
             style={{ background: "linear-gradient(0deg, rgba(60,100,200,0.12), transparent)" }}
@@ -431,16 +444,24 @@ export default function ArtBg({ variant }: Props) {
 
       {variant === "story" && (
         <>
-          <LightRays count={2} angle={-25} />
-          <LargeNebulae count={3} />
+          {active && (
+            <>
+              <LightRays count={2} angle={-25} />
+              <LargeNebulae count={3} />
+            </>
+          )}
           <MountainSilhouette height="15%" />
         </>
       )}
 
       {variant === "projects" && (
         <>
-          <LargeNebulae count={4} />
-          <LightRays count={2} angle={-30} />
+          {active && (
+            <>
+              <LargeNebulae count={4} />
+              <LightRays count={2} angle={-30} />
+            </>
+          )}
           <div
             className="absolute rounded-full pointer-events-none"
             style={{
@@ -457,8 +478,12 @@ export default function ArtBg({ variant }: Props) {
 
       {variant === "skills" && (
         <>
-          <LightRays count={2} angle={-10} />
-          <LargeNebulae count={3} />
+          {active && (
+            <>
+              <LightRays count={2} angle={-10} />
+              <LargeNebulae count={3} />
+            </>
+          )}
           <div
             className="absolute rounded-full pointer-events-none"
             style={{
@@ -475,8 +500,12 @@ export default function ArtBg({ variant }: Props) {
 
       {variant === "insights" && (
         <>
-          <ShootingStar delay={5} />
-          <LargeNebulae count={3} />
+          {active && (
+            <>
+              <ShootingStar delay={5} />
+              <LargeNebulae count={3} />
+            </>
+          )}
           <div
             className="absolute pointer-events-none"
             style={{
@@ -494,8 +523,12 @@ export default function ArtBg({ variant }: Props) {
 
       {variant === "connect" && (
         <>
-          <LightRays count={2} angle={-20} />
-          <LargeNebulae count={3} />
+          {active && (
+            <>
+              <LightRays count={2} angle={-20} />
+              <LargeNebulae count={3} />
+            </>
+          )}
           <MountainSilhouette height="18%" />
         </>
       )}

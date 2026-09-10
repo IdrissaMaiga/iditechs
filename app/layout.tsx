@@ -51,7 +51,6 @@ export default function RootLayout({
     <html lang="en" suppressHydrationWarning className="scroll-smooth dark">
       <head>
         <link rel="icon" href="/favicon.ico" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
       </head>
       <body className={`${inter.variable} ${spaceGrotesk.variable} font-sans antialiased`}>
         <SessionProvider>
