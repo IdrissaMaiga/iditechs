@@ -1,5 +1,10 @@
 import type { Metadata } from "next";
+import Image from "next/image";
 import { company, legalLine } from "@/lib/company";
+
+const R2 = "https://pub-5dbae7ae21f345449868f710152b690e.r2.dev";
+const heroImage = `${R2}/company/hero.jpg`;
+const ogImage = `${R2}/company/og.png`;
 
 export const metadata: Metadata = {
   title: "IDITECHS · Services informatiques à Bamako",
@@ -28,9 +33,13 @@ export const metadata: Metadata = {
     title: "IDITECHS · Services informatiques à Bamako",
     description:
       "Sites web, logiciels métier, installation informatique et formation pour les entreprises de Bamako. Entreprise immatriculée au RCCM.",
-    images: [{ url: "https://pub-5dbae7ae21f345449868f710152b690e.r2.dev/company/og.png", width: 1200, height: 630, alt: "IDITECHS" }],
+    images: [{ url: ogImage, width: 1200, height: 630, alt: "IDITECHS · services informatiques à Bamako" }],
   },
-  twitter: { card: "summary_large_image", title: "IDITECHS · Services informatiques à Bamako" },
+  twitter: {
+    card: "summary_large_image",
+    title: "IDITECHS · Services informatiques à Bamako",
+    images: [ogImage],
+  },
   robots: { index: true, follow: true },
 };
 
@@ -88,7 +97,18 @@ export default function CompanyPage() {
       </header>
 
       <section id="top" className="relative overflow-hidden">
-        <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_top,rgba(14,116,144,0.35),transparent_60%)]" />
+        <Image
+          src={heroImage}
+          alt=""
+          fill
+          priority
+          sizes="100vw"
+          className="pointer-events-none select-none object-cover object-right"
+        />
+        {/* Keeps the headline readable over the pattern: dark on the left, image showing through on the right. */}
+        <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(100deg,#030712_26%,rgba(3,7,18,0.93)_46%,rgba(3,7,18,0.6)_66%,rgba(3,7,18,0.2)_88%)]" />
+        <div className="pointer-events-none absolute inset-0 bg-[#030712]/55 sm:hidden" />
+        <div className="pointer-events-none absolute inset-x-0 bottom-0 h-28 bg-gradient-to-b from-transparent to-[#030712]" />
         <div className="relative mx-auto max-w-6xl px-5 pb-20 pt-24 sm:pt-32">
           <p className="mb-4 text-xs font-semibold uppercase tracking-[0.3em] text-cyan-400">Services informatiques · Bamako</p>
           <h1 className="font-display max-w-3xl text-4xl font-bold leading-tight text-white sm:text-6xl">
