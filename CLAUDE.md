@@ -19,6 +19,8 @@ This project also serves the IDITECHS company site. `middleware.ts` host-guards 
 - **OG image**: `company/og.png` on R2
 - **SEO**: `app/robots.ts` and `app/sitemap.ts` branch on `isCompanyHost()`, so each host serves its own robots and sitemap. Both are dynamic (`ƒ`) as a result — that is intentional, do not make them static again
 - **DNS** (Cloudflare, DNS-only, never proxied): `A iditechs.com -> 76.76.21.21`, `CNAME www -> cname.vercel-dns.com`. Leave MX/TXT alone or `mail.iditechs.com` (72.62.150.35) breaks. DNS calls need `CLOUDFLARE_EMAIL` + `CLOUDFLARE_API_KEY`; the scoped `CLOUDFLARE_API_TOKEN` is R2-only
+- **A rewrite keeps the pathname.** On the company host `/` is rewritten to `/company`, so `usePathname()` still returns `/` and `hide-on-company.tsx` alone is not enough. Per-host decisions (navbar, chat button, RSS link, Person JSON-LD) are made in `app/layout.tsx` from `headers().get("host")`. That makes every page dynamic (`ƒ`) — intentional
+- Page metadata merges with the root layout's, so a non-portfolio route must override `keywords`/`authors`/`creator` or it inherits "Java Developer, React, Budapest"
 - Host routing lives in `middleware.ts`, not `next.config.mjs`. This repo is the only copy of the site; there is no standalone static version
 - Hosting decided 2026-09-10: this Vercel project. Vercel Pro or the VPS (same repo code) are fallbacks only
 
