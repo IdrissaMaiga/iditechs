@@ -4,12 +4,23 @@
 Next.js 14 portfolio with 3D (Three.js/R3F), AI chatbot (Gemini), R2-backed blog, LinkedIn integration, Cloudflare R2 storage, and MCP server.
 
 ## Key Info
-- **Live**: https://idrissamaiga.iditechs.com
+- **Live**: https://idrissamaiga.iditechs.com (portfolio) · https://iditechs.com and https://www.iditechs.com (IDITECHS company page, same Vercel project, served from `app/company` by the host guard in `middleware.ts`)
 - **Email**: idrissa.maiga@iditechs.com
 - **GitHub**: IdrissaMaiga/portfolio
 - **Vercel team**: idrissamaigas-projects
 - **R2 bucket**: portfolio-uploads
 - **R2 public**: https://pub-5dbae7ae21f345449868f710152b690e.r2.dev
+
+## Company site (iditechs.com)
+This project also serves the IDITECHS company site. `middleware.ts` host-guards `iditechs.com` / `www.iditechs.com`: `/` and `/company` render the company page, every other path 308-redirects to `/`. The matcher excludes `_next/`, `api/`, `favicon.ico`, `robots.txt`, `sitemap.xml` and `logos/`. `www` 308s to the apex. `idrissamaiga.iditechs.com` is unaffected: blog, mail and stats exist only there.
+- **Page**: `app/company/page.tsx` (French landing page, OG metadata + JSON-LD)
+- **Identity**: `lib/company.ts` (brand, RCCM, NIF, address, phones, `isCompanyHost()`, `legalLine()` — the portfolio footer reads it too)
+- **Chrome**: `components/hide-on-company.tsx` hides the navbar and AI chat button on `/company`
+- **OG image**: `company/og.png` on R2
+- **SEO**: `app/robots.ts` and `app/sitemap.ts` branch on `isCompanyHost()`, so each host serves its own robots and sitemap. Both are dynamic (`ƒ`) as a result — that is intentional, do not make them static again
+- **DNS** (Cloudflare, DNS-only, never proxied): `A iditechs.com -> 76.76.21.21`, `CNAME www -> cname.vercel-dns.com`. Leave MX/TXT alone or `mail.iditechs.com` (72.62.150.35) breaks. DNS calls need `CLOUDFLARE_EMAIL` + `CLOUDFLARE_API_KEY`; the scoped `CLOUDFLARE_API_TOKEN` is R2-only
+- Host routing lives in `middleware.ts`, not `next.config.mjs`. This repo is the only copy of the site; there is no standalone static version
+- Hosting decided 2026-09-10: this Vercel project. Vercel Pro or the VPS (same repo code) are fallbacks only
 
 ## Blog Architecture
 Blog posts are stored entirely on Cloudflare R2. No local MDX files.
@@ -39,6 +50,7 @@ git add -A && git commit -m "msg" && git push origin main
 VERCEL_TOKEN=$(grep 'VERCEL_TOKEN=' .env.local | cut -d'=' -f2 | tr -d '\r\n ')
 npx vercel deploy --prod --token "$VERCEL_TOKEN" --scope idrissamaigas-projects --yes --no-wait
 ```
+A local `next build` needs `NEXTAUTH_URL` exported in the shell: `.env.production.local` (pulled from Vercel) sets it to `""` and build prefers it over `.env.local`.
 
 ### Admin API auth
 All admin routes require header: `x-admin-key: <ADMIN_API_KEY from .env.local>`
@@ -52,3 +64,5 @@ All admin routes require header: `x-admin-key: <ADMIN_API_KEY from .env.local>`
 - Git email must be maigadrisking@gmail.com (not the noreply one) or Vercel blocks deploys
 - Blog images go to R2 only. Never store in public/logos/
 - No local MDX files. All blog content lives on R2
+- This repo also serves iditechs.com: `middleware.ts` + `lib/company.ts` route that host to `app/company`. Never delete `middleware.ts` or narrow its matcher/`companyHosts` (takes iditechs.com down or leaks the portfolio onto it)
+- One deploy ships the portfolio and iditechs.com. Check `/company` after deploying code
