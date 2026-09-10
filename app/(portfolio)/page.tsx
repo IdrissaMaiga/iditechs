@@ -19,14 +19,14 @@ export default function Home() {
 
       <SectionTransition variant="double-door" />
 
-      <RoomFrame accent="indigo">
-        <StorySection />
+      <RoomFrame accent="purple">
+        <ProjectsSection />
       </RoomFrame>
 
       <SectionTransition variant="single-door" />
 
-      <RoomFrame accent="purple">
-        <ProjectsSection />
+      <RoomFrame accent="indigo">
+        <StorySection />
       </RoomFrame>
 
       <SectionTransition variant="double-door" />

@@ -195,8 +195,11 @@ export default function ChatButton() {
   };
 
   const toggleChat = () => {
+    // Anonymous visitors get an explanation first. Firing signIn() straight from the
+    // site's most prominent button meant a stranger's first interaction was a Google
+    // consent screen for an account they had no reason to hand over.
     if (!session) {
-      signIn("google");
+      setIsChatOpen((open) => !open);
       return;
     }
     if (isChatOpen) { setIsChatOpen(false); setIsMinimized(false); }
@@ -572,10 +575,51 @@ export default function ChatButton() {
       </AnimatePresence>
 
       <AnimatePresence>
-        {isChatOpen && (
+        {isChatOpen && !session && (
+          <motion.div
+            role="dialog"
+            aria-label="Sign in to chat"
+            className="fixed z-50 bottom-6 right-6 w-[90vw] max-w-[360px] rounded-2xl bg-[#0a0f1e]/95 backdrop-blur-xl border border-white/[0.08] p-5 shadow-2xl shadow-blue-500/10"
+            initial={{ scale: 0.9, opacity: 0, y: 20, transformOrigin: "bottom right" }}
+            animate={{ scale: 1, opacity: 1, y: 0 }}
+            exit={{ scale: 0.9, opacity: 0, y: 20 }}
+            transition={{ type: "spring", stiffness: 350, damping: 30 }}
+          >
+            <h2 className="text-white font-semibold text-base">Ask about my work</h2>
+            <p className="mt-2 text-sm text-gray-300 leading-relaxed">
+              An AI assistant that answers questions about my projects, stack and experience.
+              Sign in so your conversation is saved and you can pick it up later.
+            </p>
+            <div className="mt-4 flex items-center gap-2">
+              <button
+                onClick={() => signIn("google")}
+                className="flex-1 rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-blue-500"
+              >
+                Continue with Google
+              </button>
+              <button
+                onClick={() => setIsChatOpen(false)}
+                className="rounded-xl px-3 py-2.5 text-sm text-gray-400 transition-colors hover:text-white"
+              >
+                Not now
+              </button>
+            </div>
+            <p className="mt-3 text-xs text-gray-400">
+              Prefer not to sign in? Email{" "}
+              <a href="mailto:idrissa.maiga@iditechs.com" className="text-blue-400 hover:text-blue-300">
+                idrissa.maiga@iditechs.com
+              </a>
+              .
+            </p>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {isChatOpen && session && (
           <motion.div
             className="fixed z-50 bottom-6 right-6 w-[90vw] max-w-[420px] flex flex-col rounded-2xl overflow-hidden bg-[#0a0f1e]/95 backdrop-blur-xl border border-white/[0.08] shadow-2xl shadow-blue-500/10"
-            style={{ height: "min(600px, calc(100vh - 48px))", minHeight: "400px" }}
+            style={{ height: "min(600px, calc(100dvh - 48px))", minHeight: "400px" }}
             initial={{ scale: 0.85, opacity: 0, y: 30, transformOrigin: "bottom right" }}
             animate={{ scale: 1, opacity: 1, y: 0 }}
             exit={{ scale: 0.85, opacity: 0, y: 30 }}
@@ -738,8 +782,8 @@ export default function ChatButton() {
                       onKeyDown={handleKeyDown}
                       placeholder={isListening ? "Listening..." : "Ask me anything about Idrissa..."}
                       rows={1}
-                      className="flex-1 resize-none bg-transparent text-gray-200 text-sm placeholder-gray-500 outline-none leading-relaxed py-1.5"
-                      style={{ minHeight: "32px", maxHeight: "120px" }}
+                      className="flex-1 resize-none bg-transparent text-gray-200 text-[16px] sm:text-sm placeholder-gray-400 outline-none leading-relaxed py-1.5"
+                      style={{ minHeight: "40px", maxHeight: "120px" }}
                     />
                     <button
                       onClick={() => sendMessage(userMessage)}

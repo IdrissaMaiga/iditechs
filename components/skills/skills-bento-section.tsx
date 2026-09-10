@@ -41,7 +41,7 @@ export default function SkillsBentoSection() {
           <span className="inline-block px-4 py-1.5 rounded-full bg-blue-500/10 border border-blue-500/20 text-blue-400 text-sm font-medium backdrop-blur-sm">
             Expertise
           </span>
-          <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold mt-6 mb-6 text-white">
+          <h2 className="text-[1.625rem] md:text-4xl lg:text-5xl font-bold mt-6 mb-6 text-white">
             Skills &{" "}
             <span className="text-white">
               Technologies

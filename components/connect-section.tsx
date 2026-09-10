@@ -221,7 +221,7 @@ export default function ConnectSection() {
             <span className="inline-block px-4 py-1.5 rounded-full bg-amber-500/10 border border-amber-500/20 text-amber-400 text-xs sm:text-sm font-mono font-medium tracking-wide">
               &lt;get_in_touch /&gt;
             </span>
-            <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold mt-5 mb-5 text-white">
+            <h2 className="text-[1.625rem] sm:text-4xl md:text-5xl font-bold mt-5 mb-5 text-white">
               Let&apos;s{" "}
               <span className="text-white">
                 Connect
@@ -254,7 +254,7 @@ export default function ConnectSection() {
                       <FiMail className="w-4 h-4 sm:w-5 sm:h-5" />
                     </div>
                     <div className="flex-1 min-w-0">
-                      <span className="block text-xs text-gray-500 mb-1 font-mono uppercase tracking-wider">
+                      <span className="block text-xs text-gray-400 mb-1 font-mono uppercase tracking-wider">
                         Email
                       </span>
                       <div className="flex items-center gap-2">
@@ -290,7 +290,7 @@ export default function ConnectSection() {
                       <FiMapPin className="w-4 h-4 sm:w-5 sm:h-5" />
                     </div>
                     <div>
-                      <span className="block text-xs text-gray-500 mb-1 font-mono uppercase tracking-wider">
+                      <span className="block text-xs text-gray-400 mb-1 font-mono uppercase tracking-wider">
                         Location
                       </span>
                       <span className="text-sm sm:text-base text-gray-200">
@@ -371,7 +371,7 @@ export default function ConnectSection() {
                         name="name"
                         value={formState.name}
                         onChange={handleChange}
-                        className="w-full px-4 py-2.5 sm:py-3 rounded-xl bg-white/[0.04] border border-white/[0.08] text-gray-100 placeholder-gray-600 font-mono text-sm sm:text-base focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 hover:border-white/[0.15] transition-all"
+                        className="w-full px-4 py-2.5 sm:py-3 rounded-xl bg-white/[0.04] border border-white/[0.08] text-gray-100 placeholder-gray-400 font-mono text-[16px] sm:text-base focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 hover:border-white/[0.15] transition-all"
                         placeholder="John Doe"
                         required
                       />
@@ -396,7 +396,7 @@ export default function ConnectSection() {
                         name="email"
                         value={formState.email}
                         onChange={handleChange}
-                        className="w-full px-4 py-2.5 sm:py-3 rounded-xl bg-white/[0.04] border border-white/[0.08] text-gray-100 placeholder-gray-600 font-mono text-sm sm:text-base focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 hover:border-white/[0.15] transition-all"
+                        className="w-full px-4 py-2.5 sm:py-3 rounded-xl bg-white/[0.04] border border-white/[0.08] text-gray-100 placeholder-gray-400 font-mono text-[16px] sm:text-base focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 hover:border-white/[0.15] transition-all"
                         placeholder="your@email.com"
                         required
                       />
@@ -420,7 +420,7 @@ export default function ConnectSection() {
                       name="subject"
                       value={formState.subject}
                       onChange={handleChange}
-                      className="w-full px-4 py-2.5 sm:py-3 rounded-xl bg-white/[0.04] border border-white/[0.08] text-gray-100 placeholder-gray-600 font-mono text-sm sm:text-base focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 hover:border-white/[0.15] transition-all"
+                      className="w-full px-4 py-2.5 sm:py-3 rounded-xl bg-white/[0.04] border border-white/[0.08] text-gray-100 placeholder-gray-400 font-mono text-[16px] sm:text-base focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 hover:border-white/[0.15] transition-all"
                       placeholder="Project Inquiry"
                     />
                   </AnimatedField>
@@ -448,7 +448,7 @@ export default function ConnectSection() {
                         value={formState.message}
                         onChange={handleChange}
                         rows={5}
-                        className="w-full px-4 py-2.5 sm:py-3 pl-14 sm:pl-16 pt-9 sm:pt-10 rounded-xl bg-white/[0.04] border border-white/[0.08] text-gray-100 placeholder-gray-600 font-mono text-sm sm:text-base focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 hover:border-white/[0.15] transition-all resize-none"
+                        className="w-full px-4 py-2.5 sm:py-3 pl-14 sm:pl-16 pt-9 sm:pt-10 rounded-xl bg-white/[0.04] border border-white/[0.08] text-gray-100 placeholder-gray-400 font-mono text-[16px] sm:text-base focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 hover:border-white/[0.15] transition-all resize-none"
                         placeholder="Hello Idrissa, I'd like to discuss..."
                         required
                       />
@@ -484,7 +484,7 @@ export default function ConnectSection() {
                       <button
                         type="submit"
                         disabled={isSubmitting}
-                        className="group relative inline-flex items-center justify-center px-6 sm:px-8 py-2.5 sm:py-3 rounded-xl bg-gradient-to-r from-blue-600 to-cyan-600 text-white text-sm sm:text-base font-medium overflow-hidden transition-all duration-300 hover:shadow-[0_0_30px_rgba(34,211,238,0.4)] disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:shadow-none"
+                        className="group relative inline-flex items-center justify-center px-6 sm:px-8 py-2.5 sm:py-3 rounded-xl bg-gradient-to-r from-blue-600 to-cyan-600 text-white text-[16px] sm:text-base font-medium overflow-hidden transition-all duration-300 hover:shadow-[0_0_30px_rgba(34,211,238,0.4)] disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:shadow-none"
                       >
                         <span className="absolute inset-0 bg-gradient-to-r from-blue-600 to-blue-500 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
                         <span className="relative flex items-center">
@@ -501,7 +501,7 @@ export default function ConnectSection() {
                           )}
                         </span>
                       </button>
-                      <p className="text-xs text-gray-600 font-mono hidden sm:block">
+                      <p className="text-xs text-gray-400 font-mono hidden sm:block">
                         <span className="text-red-400">*</span> required fields
                       </p>
                     </div>
@@ -542,7 +542,7 @@ export default function ConnectSection() {
                 Idrissa Maiga
               </h3>
               <p className="text-gray-400 text-sm sm:text-base mt-1">
-                Full-Stack Developer &middot; Building robust, scalable
+                Full Stack Engineer &middot; Building robust, scalable
                 applications
               </p>
             </div>
@@ -572,11 +572,11 @@ export default function ConnectSection() {
 
           {/* Bottom bar */}
           <div className="border-t border-white/10 mt-8 pt-6 flex flex-col sm:flex-row justify-between items-center gap-3 text-center sm:text-left">
-            <p className="text-gray-500 text-xs sm:text-sm">
+            <p className="text-gray-400 text-xs sm:text-sm">
               &copy; 2026 Idrissa Maiga. All rights reserved.
-              <span className="block text-gray-600 mt-1">{legalLine("en")}</span>
+              <span className="block text-gray-400 mt-1">{legalLine("en")}</span>
             </p>
-            <p className="text-gray-600 text-xs sm:text-sm">
+            <p className="text-gray-400 text-xs sm:text-sm">
               Built with Next.js &amp; Tailwind CSS
             </p>
           </div>

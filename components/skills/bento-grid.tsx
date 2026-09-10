@@ -151,7 +151,7 @@ export default function BentoGrid() {
       {heroSkills.map((skill) => (
         <div
           key={skill.name}
-          className="col-span-6 md:col-span-4 xl:col-span-4 row-span-2"
+          className="col-span-12 sm:col-span-6 md:col-span-4 row-span-2"
         >
           <SkillHeroCard
             name={skill.name}
@@ -167,7 +167,7 @@ export default function BentoGrid() {
       {compactSkills.map((skill) => (
         <div
           key={skill.name}
-          className="col-span-6 md:col-span-3 xl:col-span-3"
+          className="col-span-12 sm:col-span-6 lg:col-span-3"
         >
           <SkillCompactCard
             name={skill.name}

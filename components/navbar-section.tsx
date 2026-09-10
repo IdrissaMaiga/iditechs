@@ -13,8 +13,8 @@ const LINKEDIN_URL = "https://www.linkedin.com/in/idrissa-maiga-16581b245/";
 
 const navLinks = [
   { name: "Home", href: "/#home" },
-  { name: "Story", href: "/#story" },
   { name: "Work", href: "/#projects" },
+  { name: "Story", href: "/#story" },
   { name: "Expertise", href: "/#skills" },
   { name: "Insights", href: "/#insights" },
   { name: "Connect", href: "/#connect" },
@@ -33,8 +33,8 @@ export default function Navbar() {
   const { data: session } = useSession();
   const isOwner = (session?.user as { isOwner?: boolean })?.isOwner === true;
 
-  // "Mailboxes" appears once you're signed in (owner-only feature).
-  const links = session ? [...navLinks, { name: "Mailboxes", href: "/mail" }] : navLinks;
+  // Mailboxes is owner-only: any signed-in visitor used to see it and land on a dead end.
+  const links = isOwner ? [...navLinks, { name: "Mailboxes", href: "/mail" }] : navLinks;
 
   useEffect(() => {
     if (pathname.startsWith("/blog")) {
@@ -132,7 +132,7 @@ export default function Navbar() {
               Idrissa Maiga
             </span>
             <span className="block text-xs sm:text-sm text-gray-400 font-mono">
-              Full-Stack Developer
+              Full Stack Engineer
             </span>
           </Link>
         </div>
@@ -194,7 +194,7 @@ export default function Navbar() {
             href={GITHUB_URL}
             target="_blank"
             rel="noopener noreferrer"
-            className="p-1.5 sm:p-2 rounded-lg text-gray-400 hover:text-white hover:bg-white/10 transition-all duration-200"
+            className="hidden sm:flex sm:min-w-[44px] sm:min-h-[44px] sm:items-center sm:justify-center rounded-lg text-gray-400 hover:text-white hover:bg-white/10 transition-all duration-200"
             title="GitHub"
           >
             <FiGithub className="w-4 h-4 sm:w-[18px] sm:h-[18px]" />
@@ -203,7 +203,7 @@ export default function Navbar() {
             href={LINKEDIN_URL}
             target="_blank"
             rel="noopener noreferrer"
-            className="p-1.5 sm:p-2 rounded-lg text-gray-400 hover:text-[#0A66C2] hover:bg-[#0A66C2]/10 transition-all duration-200"
+            className="hidden sm:flex sm:min-w-[44px] sm:min-h-[44px] sm:items-center sm:justify-center rounded-lg text-gray-400 hover:text-[#0A66C2] hover:bg-[#0A66C2]/10 transition-all duration-200"
             title="LinkedIn"
           >
             <FiLinkedin className="w-4 h-4 sm:w-[18px] sm:h-[18px]" />
@@ -251,7 +251,7 @@ export default function Navbar() {
           {/* Mobile Menu Button */}
           <button
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            className="xl:hidden p-1.5 sm:p-2 rounded-lg bg-white/10 text-gray-300 hover:bg-white/20 hover:text-white transition-all duration-200"
+            className="xl:hidden min-w-[44px] min-h-[44px] flex items-center justify-center rounded-lg bg-white/10 text-gray-300 hover:bg-white/20 hover:text-white transition-all duration-200"
             aria-label="Toggle menu"
           >
             {mobileMenuOpen ? (

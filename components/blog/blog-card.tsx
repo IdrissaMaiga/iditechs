@@ -54,7 +54,7 @@ export default function BlogCard({ post, index }: BlogCardProps) {
               </h3>
 
               {/* Meta: date + reading time */}
-              <div className="flex items-center gap-4 text-xs text-gray-500 mb-3">
+              <div className="flex items-center gap-4 text-xs text-gray-400 mb-3">
                 <span className="flex items-center gap-1.5">
                   <FiCalendar className="w-3.5 h-3.5" />
                   {formattedDate}

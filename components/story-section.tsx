@@ -63,11 +63,12 @@ const timelineNodes = [
   { label: "4D Consulting", sub: "Software Developer Intern", color: "#ec4899", year: "Now", icon: <FiBriefcase className="w-3.5 h-3.5" /> },
 ];
 
+// Each number is attributable to something on this page. "530+ Commits" used to sit
+// here: hardcoded, so it only aged worse, and low for a working engineer.
 const stats = [
-  { target: 28, suffix: "+", label: "Projects", color: "#3b82f6" },
-  { target: 530, suffix: "+", label: "Commits", color: "#06b6d4" },
-  { target: 5000, suffix: "+", label: "Users Served", color: "#10b981" },
-  { target: 1100, suffix: "+", label: "API Endpoints", color: "#a855f7" },
+  { target: 28, suffix: "+", label: "Projects shipped", color: "#3b82f6" },
+  { target: 5000, suffix: "+", label: "Monthly users on horizoneurope.io", color: "#10b981" },
+  { target: 1100, suffix: "+", label: "Neptun API endpoints mapped", color: "#a855f7" },
 ];
 
 const fadeIn = {
@@ -121,7 +122,7 @@ export default function StorySection() {
           <span className="inline-block px-4 py-2 rounded-full bg-white/5 backdrop-blur-md border border-white/10 text-cyan-400 text-sm font-medium mb-6">
             About Me
           </span>
-          <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold text-white mb-4">
+          <h2 className="text-[1.625rem] sm:text-4xl md:text-5xl font-bold text-white mb-4">
             My{" "}
             <span className="text-white">
               Story

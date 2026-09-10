@@ -28,7 +28,6 @@
 
   /* Responsive font sizes */
   --font-size-base: 16px;
-  --font-size-sm: 14px;
   --font-size-lg: 18px;
 }
 
@@ -36,7 +35,7 @@
   /* Base styles */
   html {
     scroll-behavior: smooth;
-    scroll-padding-top: 64px;
+    scroll-padding-top: 76px;
     font-size: var(--font-size-base);
     overscroll-behavior: contain;
   }
@@ -47,13 +46,6 @@
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     line-height: 1.6;
-  }
-
-  /* Responsive font sizes */
-  @media (max-width: 640px) {
-    html {
-      font-size: var(--font-size-sm);
-    }
   }
 
   @media (min-width: 1024px) {
@@ -94,13 +86,6 @@
   h1, h2, h3, h4, h5, h6 {
     font-family: 'Space Grotesk', sans-serif;
     font-weight: 700;
-  }
-
-  @media (max-width: 640px) {
-    h1 { font-size: 1.75rem; }
-    h2 { font-size: 1.5rem; }
-    h3 { font-size: 1.25rem; }
-    h4 { font-size: 1.125rem; }
   }
 
   .gradient-text {

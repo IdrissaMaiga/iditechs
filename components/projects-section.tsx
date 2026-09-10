@@ -43,9 +43,9 @@ const projects: Project[] = [
     id: "horizoneurope",
     title: "HorizonEurope.io",
     shortDesc:
-      "AI-powered EU funding guidance platform serving 5,000+ monthly users with real-time API responses under 2ms.",
+      "AI-powered EU funding guidance platform built for the European Innovation Council, serving 5,000+ monthly users.",
     description:
-      "Built during my role as Full Stack Engineer at EISMEA (European Innovation Council). The platform helps researchers find the right EU funding opportunities using AI-powered matching, smart context management, and automated document processing. Features high-speed scrapers for EU grant data extraction and an intelligent categorization engine processing 500+ funding opportunities.",
+      "Built during my role as Full Stack Engineer at EISMEA (European Innovation Council). The platform helps researchers find the right EU funding opportunities using AI-powered matching, smart context management, and automated document processing. Features a resilient ingestion pipeline for EU grant data and an intelligent categorization engine processing 500+ funding opportunities.",
     techStack: [
       "Spring Boot",
       "React.js",
@@ -57,15 +57,15 @@ const projects: Project[] = [
     features: [
       "Smart context management engine for intelligent interactions",
       "NLP-based categorization of 500+ funding opportunities",
-      "High-speed scraper bypassing captchas for EU grant data",
-      "Real-time API responses under 2ms",
+      "Resilient ingestion pipeline that keeps EU grant data in sync as source portals change",
+      "Cached funding lookups served in under 2ms server-side",
       "Document processing for EU funding calls",
       "Serving 5,000+ monthly users",
     ],
     challenges: [
       "Processing large EU datasets efficiently",
-      "Building captcha-bypassing scrapers",
-      "Achieving sub-2ms API response times",
+      "Keeping ingestion reliable as source portals change their markup and rate limits",
+      "Getting cached lookups under 2ms server-side without stale funding data",
       "Handling complex multi-language funding documents",
     ],
     image: "/logos/HorizonEurope Home.png",
@@ -243,7 +243,7 @@ const detailTabs = [
   },
   {
     id: "challenges",
-    label: "Challenges & Solutions",
+    label: "Engineering challenges",
     icon: <FiAlertTriangle className="w-4 h-4" />,
   },
   {
@@ -274,7 +274,10 @@ export default function DetailedProjectsSection() {
     };
   }, [selectedProject]);
 
+  const lastFocused = useRef<HTMLElement | null>(null);
+
   const openProject = useCallback((project: Project) => {
+    lastFocused.current = document.activeElement as HTMLElement | null;
     setActiveTab("overview");
     setSelectedProject(project);
   }, []);
@@ -282,6 +285,17 @@ export default function DetailedProjectsSection() {
   const closeProject = useCallback(() => {
     setSelectedProject(null);
   }, []);
+
+  // Move focus into the dialog on open and hand it back to the card on close,
+  // so keyboard and screen-reader users are not left behind the modal.
+  useEffect(() => {
+    if (selectedProject) {
+      modalRef.current?.focus();
+    } else if (lastFocused.current) {
+      lastFocused.current.focus();
+      lastFocused.current = null;
+    }
+  }, [selectedProject]);
 
   // Listen for open-project events from the AI assistant
   useEffect(() => {
@@ -348,7 +362,7 @@ export default function DetailedProjectsSection() {
           >
             Portfolio
           </motion.span>
-          <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold text-white mb-4">
+          <h2 className="text-[1.625rem] sm:text-4xl md:text-5xl font-bold text-white mb-4">
             Featured{" "}
             <span className="text-white">
               Projects
@@ -371,7 +385,17 @@ export default function DetailedProjectsSection() {
               viewport={{ once: true, margin: "-80px" }}
               style={{ transformStyle: "preserve-3d" }}
               onClick={() => openProject(project)}
-              className="group cursor-pointer bg-white/[0.03] backdrop-blur-md border border-white/[0.08] rounded-2xl overflow-hidden transition-all duration-300 hover:border-white/[0.15] hover:shadow-[0_0_30px_rgba(59,130,246,0.08)]"
+              onKeyDown={(e) => {
+                if (e.key === "Enter" || e.key === " ") {
+                  e.preventDefault();
+                  openProject(project);
+                }
+              }}
+              role="button"
+              tabIndex={0}
+              aria-haspopup="dialog"
+              aria-label={`${project.title}: open project details`}
+              className="group cursor-pointer bg-white/[0.03] backdrop-blur-md border border-white/[0.08] rounded-2xl overflow-hidden transition-all duration-300 hover:border-white/[0.15] hover:shadow-[0_0_30px_rgba(59,130,246,0.08)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400 focus-visible:ring-offset-2 focus-visible:ring-offset-[#030712]"
             >
               {/* Card image */}
               <div className="relative h-48 overflow-hidden bg-[#0a0f1e]">
@@ -439,7 +463,7 @@ export default function DetailedProjectsSection() {
                       Live Demo
                     </a>
                   )}
-                  <span className="ml-auto inline-flex items-center gap-1 text-xs text-gray-500 group-hover:text-blue-400 transition-colors">
+                  <span className="ml-auto inline-flex items-center gap-1 text-xs text-gray-400 group-hover:text-blue-400 transition-colors">
                     View details
                     <FiChevronRight className="w-3.5 h-3.5 transition-transform group-hover:translate-x-0.5" />
                   </span>
@@ -479,12 +503,16 @@ export default function DetailedProjectsSection() {
             {/* Modal panel */}
             <motion.div
               ref={modalRef}
+              role="dialog"
+              aria-modal="true"
+              aria-label={`${selectedProject.title} project details`}
+              tabIndex={-1}
               initial={{ opacity: 0, y: 40, scale: 0.97 }}
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: 30, scale: 0.97 }}
               transition={{ duration: 0.3, ease: "easeOut" }}
               onClick={(e) => e.stopPropagation()}
-              className="relative w-full max-w-2xl lg:max-w-3xl bg-[#0a0f1e]/95 backdrop-blur-xl border border-white/[0.08] rounded-2xl overflow-hidden shadow-2xl shadow-blue-900/10 z-10 my-auto"
+              className="relative w-full max-w-2xl lg:max-w-3xl bg-[#0a0f1e]/95 backdrop-blur-xl border border-white/[0.08] rounded-2xl overflow-hidden shadow-2xl shadow-blue-900/10 z-10 my-auto focus:outline-none"
             >
               {/* Close button */}
               <button
@@ -577,7 +605,7 @@ export default function DetailedProjectsSection() {
                       </ul>
                     )}
 
-                    {/* -- Challenges -- */}
+                    {/* Challenges */}
                     {activeTab === "challenges" && (
                       <ul className="space-y-3">
                         {selectedProject.challenges.map((challenge, i) => (

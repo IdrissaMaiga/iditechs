@@ -170,7 +170,7 @@ export default function SubscribeForm({ variant = "full" }: { variant?: "inline"
             onChange={(e) => setEmail(e.target.value)}
             placeholder="your@email.com"
             required
-            className="flex-1 px-3.5 py-2.5 bg-white/[0.05] border border-white/[0.1] rounded-lg text-white placeholder-gray-500 text-sm focus:outline-none focus:border-blue-500/50 transition-colors"
+            className="flex-1 px-3.5 py-2.5 bg-white/[0.05] border border-white/[0.1] rounded-lg text-white placeholder-gray-400 text-[16px] sm:text-sm focus:outline-none focus:border-blue-500/50 transition-colors"
           />
           <button
             type="submit"
@@ -187,7 +187,7 @@ export default function SubscribeForm({ variant = "full" }: { variant?: "inline"
       )}
 
       {!session && (
-        <p className="text-gray-600 text-xs mt-2">
+        <p className="text-gray-400 text-xs mt-2">
           Or{" "}
           <button onClick={() => signIn("google")} className="text-blue-400/70 hover:underline">
             sign in

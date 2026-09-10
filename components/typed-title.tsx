@@ -3,13 +3,7 @@
 import { useEffect, useState } from "react";
 import { useReducedMotion } from "framer-motion";
 
-const titles = [
-  "Full Stack Engineer",
-  "Software Developer",
-  "AI Solutions Architect",
-  "Java Ecosystem Expert",
-  "Cloud-Native Developer",
-];
+const titles = ["Full Stack Engineer", "Software Developer"];
 
 const TYPE_MS = 150;
 const DELETE_MS = 50;

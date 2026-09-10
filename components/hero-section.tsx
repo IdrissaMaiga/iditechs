@@ -45,7 +45,7 @@ export default function HeroSection() {
             Hello, I&apos;m Idrissa Maiga
           </motion.span>
 
-          <h1 className="text-4xl sm:text-5xl lg:text-7xl font-bold mb-6 leading-[1.1] text-white">
+          <h1 className="text-[2rem] sm:text-5xl lg:text-7xl font-bold mb-6 leading-[1.1] text-white">
             Building digital
             <br />
             experiences with

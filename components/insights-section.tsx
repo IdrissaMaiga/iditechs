@@ -133,7 +133,7 @@ export default function InsightsSection() {
             <span className="inline-block px-4 py-1.5 rounded-full bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 text-sm font-medium mb-4">
               Insights
             </span>
-            <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold text-white">
+            <h2 className="text-[1.625rem] sm:text-4xl md:text-5xl font-bold text-white">
               Latest{" "}
               <span className="text-white">
                 Insights
@@ -189,7 +189,7 @@ export default function InsightsSection() {
                         {/* Content */}
                         <div className="p-5 sm:p-6">
                           {/* Meta */}
-                          <div className="flex items-center gap-4 text-xs text-gray-500 mb-3">
+                          <div className="flex items-center gap-4 text-xs text-gray-400 mb-3">
                             <span className="flex items-center gap-1">
                               <FiCalendar className="w-3 h-3" />
                               {new Date(post.date).toLocaleDateString("en-US", {

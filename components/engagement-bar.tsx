@@ -80,7 +80,7 @@ export default function EngagementBar({ slug, onCommentClick, compact }: Engagem
         disabled={loading}
         aria-pressed={liked}
         aria-label={`Like this post (${likeCount} ${likeCount === 1 ? "like" : "likes"})`}
-        className={`inline-flex items-center gap-1.5 transition-all ${
+        className={`relative after:absolute after:content-[''] after:-inset-y-[15px] after:-inset-x-[5px] inline-flex items-center gap-1.5 transition-all ${
           compact ? "text-xs" : "text-sm"
         } ${
           liked
@@ -109,7 +109,7 @@ export default function EngagementBar({ slug, onCommentClick, compact }: Engagem
       <button
         onClick={handleComment}
         aria-label={`View comments (${commentCount})`}
-        className={`inline-flex items-center gap-1.5 text-gray-400 hover:text-blue-400 transition-all ${
+        className={`relative after:absolute after:content-[''] after:-inset-y-[15px] after:-inset-x-[5px] inline-flex items-center gap-1.5 text-gray-400 hover:text-blue-400 transition-all ${
           compact ? "text-xs" : "text-sm"
         }`}
       >
