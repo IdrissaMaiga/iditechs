@@ -14,6 +14,12 @@ export const company = {
   portfolio: "https://idrissamaiga.iditechs.com",
 };
 
+const companyHosts = new Set(["iditechs.com", "www.iditechs.com"]);
+
+export function isCompanyHost(host: string | null | undefined) {
+  return companyHosts.has((host ?? "").split(":")[0].toLowerCase());
+}
+
 export function legalLine(lang: "fr" | "en" = "fr") {
   const nif = company.nif
     ? `NIF ${company.nif}`

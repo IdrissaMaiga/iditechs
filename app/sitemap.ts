@@ -1,7 +1,14 @@
 import { MetadataRoute } from "next";
+import { headers } from "next/headers";
 import { getAllPosts } from "@/lib/blog";
+import { company, isCompanyHost } from "@/lib/company";
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
+  // iditechs.com serves a single page from this project, so it gets its own one-entry sitemap.
+  if (isCompanyHost(headers().get("host"))) {
+    return [{ url: company.site, lastModified: new Date(), changeFrequency: "monthly", priority: 1 }];
+  }
+
   const baseUrl = "https://idrissamaiga.iditechs.com";
 
   const staticPages: MetadataRoute.Sitemap = [
