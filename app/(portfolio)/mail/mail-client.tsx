@@ -615,11 +615,14 @@ function Settings({ account, onBack }: { account?: Account; onBack: () => void }
       <h3 className="cfg-h">Étapes</h3>
       <ol className="cfg-steps">
         <li>
-          <b>Gmail (Android)</b> : Paramètres → Ajouter un compte → <i>Autre</i> → saisir {email || "l'adresse"} → <i>Personnel (IMAP)</i> → mot de passe →
-          serveur entrant <b>{MAIL_HOST}</b>, nom d&apos;utilisateur <b>{username}</b> → serveur sortant <b>{MAIL_HOST}</b>, port <b>465</b>.
-          Pour corriger un compte existant : Paramètres → le compte → <i>Paramètres du serveur entrant</i>, puis <i>Paramètres du serveur sortant</i>.
+          <b>Gmail (iPhone ou Android)</b> : photo de profil → <i>Ajouter un autre compte</i> → <i>Autre (IMAP)</i> → saisir {email || "l'adresse"} →
+          nom d&apos;utilisateur <b>{username}</b>, mot de passe → serveur entrant <b>{MAIL_HOST}</b> port <b>993</b> (SSL) → serveur sortant <b>{MAIL_HOST}</b> port <b>465</b> (SSL).
         </li>
-        <li><b>iPhone</b> : Réglages → Apps → Mail → Comptes → Ajouter un compte → <i>Autre</i> → Ajouter un compte Mail → serveurs de réception et d&apos;envoi ci-dessus.</li>
+        <li>
+          <b>Compte Gmail déjà configuré</b> : sur Android, Paramètres → le compte → <i>Paramètres du serveur entrant</i>, puis <i>sortant</i>.
+          Sur iPhone, Gmail ne permet pas de modifier le serveur : photo de profil → <i>Gérer les comptes sur cet appareil</i> → retirer le compte, puis l&apos;ajouter à nouveau comme ci-dessus.
+        </li>
+        <li><b>Apple Mail (iPhone)</b> : Réglages → Apps → Mail → Comptes → Ajouter un compte → <i>Autre</i> → Ajouter un compte Mail → serveurs de réception et d&apos;envoi ci-dessus.</li>
         <li><b>Outlook</b> : Ajouter un compte → Options avancées → <i>Configurer manuellement</i> → IMAP.</li>
       </ol>
     </div>
