@@ -44,7 +44,9 @@ Use the `portfolio` skill (`/portfolio`, files in `C:\Users\user\.claude\skills\
 4. `... share --slug <slug> --text linkedin.md --mark`
 5. No deploy needed for new posts (R2-backed, dynamic rendering)
 
-Known: the production `ADMIN_API_KEY` differs from `.env.local` (all `/api/admin/*` calls to production return 401 until resynced), `SMTP_HOST` must be changed to `mail.iditechs.com` (old host no longer resolves), and `app/api/admin/upload/route.ts` carries an uncommitted fix for the retired Imagen model. See the skill for the fixes.
+Known: the production `ADMIN_API_KEY` differs from `.env.local` (all `/api/admin/*` calls to production return 401 until resynced), and `app/api/admin/upload/route.ts` carries an uncommitted fix for the retired Imagen model. See the skill for the fixes.
+
+Mail server is `mail.iditechs.com` everywhere (code, `.env.local`, Vercel `SMTP_HOST`); the old `mail.agenticareer.com` name no longer exists. IMAP/SMTP clients must log in with the mailbox name (`idrissa`, `admin`), never the full address: Stalwart rejects `name@iditechs.com`. `/mail` → "Configurer un appareil" shows the settings and password for the selected mailbox.
 
 ### Deploy (code changes only)
 ```bash

@@ -1,9 +1,9 @@
-// App email sender — routes through OUR OWN mail server (Stalwart @ mail.agenticareer.com),
+// App email sender — routes through OUR OWN mail server (Stalwart @ mail.iditechs.com),
 // not a third party. Auth is a dedicated no-reply mailbox. Username is the login NAME
 // (e.g. "noreply"), not the email address.
 import nodemailer from "nodemailer";
 
-const HOST = process.env.SMTP_HOST || "mail.agenticareer.com";
+const HOST = process.env.SMTP_HOST || "mail.iditechs.com";
 const PORT = Number(process.env.SMTP_PORT || 465);
 const USER = process.env.SMTP_USER || "noreply";
 const PASS = process.env.SMTP_PASS || "";

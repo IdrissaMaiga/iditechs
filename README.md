@@ -56,7 +56,7 @@ Create a `.env.local` file:
 ```env
 GROQ_API_KEY=your-groq-api-key
 # App email is sent through the own mail server (Stalwart), auth as a no-reply mailbox
-SMTP_HOST=mail.agenticareer.com
+SMTP_HOST=mail.iditechs.com
 SMTP_PORT=465
 SMTP_USER=noreply
 SMTP_PASS=your-noreply-mailbox-password

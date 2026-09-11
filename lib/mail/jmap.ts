@@ -95,10 +95,11 @@ export type EmailSummary = {
 };
 
 export async function listEmails(
-  c: Creds, accountId: string, mailboxId: string, opts: { limit?: number; position?: number } = {}
+  c: Creds, accountId: string, mailboxId: string, opts: { limit?: number; position?: number; q?: string } = {}
 ): Promise<{ emails: EmailSummary[]; total: number }> {
+  const filter = opts.q ? { inMailbox: mailboxId, text: opts.q } : { inMailbox: mailboxId };
   const r = await request(c, [
-    ["Email/query", { accountId, filter: { inMailbox: mailboxId }, sort: [{ property: "receivedAt", isAscending: false }], position: opts.position ?? 0, limit: opts.limit ?? 40, calculateTotal: true }, "0"],
+    ["Email/query", { accountId, filter, sort: [{ property: "receivedAt", isAscending: false }], position: opts.position ?? 0, limit: opts.limit ?? 40, calculateTotal: true }, "0"],
     ["Email/get", { accountId, "#ids": { resultOf: "0", name: "Email/query", path: "/ids" }, properties: ["id", "threadId", "subject", "from", "to", "receivedAt", "preview", "keywords", "hasAttachment"] }, "1"],
   ]);
   const total = r.methodResponses?.[0]?.[1]?.total ?? 0;
