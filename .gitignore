@@ -51,6 +51,9 @@ turbo/
 # LinkedIn OAuth token
 .linkedin-token.json
 
+# Scanned company certificates (originals live in Documents/BUSINESS)
+Certificat_IDITECHS.*
+
 # MCP server compiled output
 mcp-server/*.js
 
