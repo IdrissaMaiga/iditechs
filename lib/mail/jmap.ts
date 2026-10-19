@@ -117,7 +117,7 @@ export async function listEmails(
 
 export type FullEmail = EmailSummary & {
   cc: Addr[]; html: string | null; text: string | null;
-  attachments: { name: string; type: string; size: number; blobId: string }[];
+  attachments: { name: string; type: string; size: number; blobId: string; cid: string | null; disposition: string | null }[];
 };
 
 export async function getEmail(c: Creds, accountId: string, id: string): Promise<FullEmail | null> {
@@ -138,7 +138,7 @@ export async function getEmail(c: Creds, accountId: string, id: string): Promise
     receivedAt: m.receivedAt, preview: m.preview ?? "", unread: false, hasAttachment: !!m.hasAttachment,
     html: htmlPart ? bv[htmlPart.partId].value : null,
     text: textPart ? bv[textPart.partId].value : null,
-    attachments: (m.attachments ?? []).map((a: any) => ({ name: a.name || "fichier", type: a.type || "application/octet-stream", size: a.size || 0, blobId: a.blobId })),
+    attachments: (m.attachments ?? []).map((a: any) => ({ name: a.name || "fichier", type: a.type || "application/octet-stream", size: a.size || 0, blobId: a.blobId, cid: a.cid ?? null, disposition: a.disposition ?? null })),
   };
 }
 

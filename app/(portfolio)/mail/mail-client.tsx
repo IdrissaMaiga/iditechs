@@ -1,12 +1,12 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { signOut } from "next-auth/react";
 import {
   FiEdit, FiSettings, FiArrowLeft, FiMenu, FiRefreshCw, FiTrash2, FiCornerUpLeft,
   FiPaperclip, FiLogOut, FiSend, FiShuffle, FiInbox, FiFileText, FiAlertOctagon, FiArchive, FiFolder,
   FiChevronDown, FiCheck, FiX, FiDownload, FiCopy, FiEye, FiEyeOff, FiSearch, FiMail,
-  FiAlertTriangle, FiSmartphone,
+  FiAlertTriangle, FiSmartphone, FiChevronUp, FiMoreHorizontal,
 } from "react-icons/fi";
 
 const MAIL_HOST = "mail.iditechs.com";
@@ -45,7 +45,8 @@ type Account = { accountId: string; name: string; email: string; description: st
 type Mailbox = { id: string; name: string; role: string | null; totalEmails: number; unreadEmails: number };
 type Addr = { name: string | null; email: string };
 type Summary = { id: string; subject: string; from: Addr[]; to: Addr[]; receivedAt: string; preview: string; unread: boolean; hasAttachment: boolean };
-type Full = Summary & { cc: Addr[]; html: string | null; text: string | null; attachments: { name: string; type: string; size: number; blobId: string }[] };
+type Attachment = { name: string; type: string; size: number; blobId: string; cid: string | null; disposition: string | null };
+type Full = Summary & { cc: Addr[]; html: string | null; text: string | null; attachments: Attachment[] };
 
 const sortFolders = (list: Mailbox[]) =>
   [...list].sort((a, b) => (ROLE_ORDER[a.role ?? ""] ?? 9) - (ROLE_ORDER[b.role ?? ""] ?? 9) || a.name.localeCompare(b.name));
@@ -74,6 +75,62 @@ function avatarColor(a: Addr[]): string {
 const looksHtml = (html: string | null) => !!html && /<\s*(p|div|br|table|tr|td|img|a|span|h[1-6]|ul|ol|li|b|strong|em|i|font|blockquote|pre|hr)\b/i.test(html);
 const stripTags = (html: string | null) => (html ?? "").replace(/<[^>]+>/g, "").replace(/&nbsp;/g, " ").replace(/&amp;/g, "&").replace(/&lt;/g, "<").replace(/&gt;/g, ">").trim();
 
+const attachmentUrl = (account: string, a: { blobId: string; name: string }, inline = false) =>
+  `/api/mail/download?account=${account}&blobId=${encodeURIComponent(a.blobId)}&name=${encodeURIComponent(a.name)}${inline ? "&inline=1" : ""}`;
+
+// Senders embed signature images as "cid:" references to attachment parts; point those at the download route.
+function resolveCids(html: string, account: string, atts: Attachment[]): { html: string; inlineBlobs: Set<string> } {
+  const inlineBlobs = new Set<string>();
+  const byCid = new Map<string, Attachment>();
+  for (const a of atts) if (a.cid) byCid.set(a.cid.replace(/^<|>$/g, ""), a);
+  if (!byCid.size) return { html, inlineBlobs };
+  const out = html.replace(/\b(src|background)=(["']?)cid:([^"'\s>]+)\2/gi, (m, attr: string, _q: string, cid: string) => {
+    let key = cid;
+    try { key = decodeURIComponent(cid); } catch { /* keep raw */ }
+    const a = byCid.get(key);
+    if (!a) return m;
+    inlineBlobs.add(a.blobId);
+    return `${attr}="${attachmentUrl(account, a, true)}"`;
+  });
+  return { html: out, inlineBlobs };
+}
+
+// Where the quoted thread starts (Outlook, Gmail, Apple Mail, Yahoo, Thunderbird, Proton).
+const HTML_QUOTE_MARKERS = [
+  /<div[^>]*\bid=["']?(?:divRplyFwdMsg|appendonsend)\b/i,
+  /<div[^>]*\bclass=["'][^"']*\b(?:gmail_quote|yahoo_quoted|moz-cite-prefix|protonmail_quote)\b/i,
+  /<blockquote[^>]*\b(?:type=["']?cite|class=["'][^"']*gmail_quote)/i,
+];
+function splitQuotedHtml(html: string): { main: string; quoted: string | null } {
+  let cut = -1;
+  for (const re of HTML_QUOTE_MARKERS) {
+    const m = re.exec(html);
+    if (m && (cut < 0 || m.index < cut)) cut = m.index;
+  }
+  if (cut < 0 || stripTags(html.slice(0, cut)).length < 2) return { main: html, quoted: null };
+  return { main: html.slice(0, cut), quoted: html.slice(cut) };
+}
+const TEXT_QUOTE_START = /\n(?=-{2,}\s*(?:Original Message|Message d'origine|Message original)\s*-{2,}|(?:On|Le) [^\n]{0,200}(?:wrote|a écrit)\s?:\s*\n|(?:From|De)\s?: [^\n]+\n(?:Sent|Envoyé|Date)\s?:|>)/i;
+function splitQuotedText(text: string): { main: string; quoted: string | null } {
+  const m = TEXT_QUOTE_START.exec(text);
+  if (!m || m.index < 2) return { main: text, quoted: null };
+  return { main: text.slice(0, m.index).trimEnd(), quoted: text.slice(m.index) };
+}
+
+type Body = { kind: "html" | "text"; main: string; full: string; hasQuote: boolean; inlineBlobs: Set<string>; reflow: boolean };
+function prepareBody(sel: Full, account: string): Body {
+  if (looksHtml(sel.html)) {
+    const { html, inlineBlobs } = resolveCids(sel.html!, account, sel.attachments);
+    const { main, quoted } = splitQuotedHtml(html);
+    // Plain correspondence (a signature table at most) reflows on phones; table-built newsletters are scaled instead.
+    const reflow = (html.match(/<table\b/gi) ?? []).length <= 3;
+    return { kind: "html", main, full: html, hasQuote: !!quoted, inlineBlobs, reflow };
+  }
+  const text = sel.text || stripTags(sel.html) || "(message vide)";
+  const { main, quoted } = splitQuotedText(text);
+  return { kind: "text", main, full: text, hasQuote: !!quoted, inlineBlobs: new Set(), reflow: false };
+}
+
 function post(body: Record<string, string>) {
   return fetch("/api/mail/action", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
 }
@@ -94,6 +151,7 @@ export function MailClient({ owner, accounts, initialAccount, initialFolder, ini
   const [showFolders, setShowFolders] = useState(false);
   const [admin, setAdmin] = useState(false);
   const [settings, setSettings] = useState(false);
+  const [showQuoted, setShowQuoted] = useState(false);
   const initialEmailDone = useRef(false);
 
   const syncUrl = useCallback((acc: string, fld: string, emailId?: string) => {
@@ -165,6 +223,7 @@ export function MailClient({ owner, accounts, initialAccount, initialFolder, ini
     if (r.ok) {
       const wasUnread = emails.find((e) => e.id === id)?.unread;
       setSel(r.email);
+      setShowQuoted(false);
       setEmails((p) => p.map((e) => (e.id === id ? { ...e, unread: false } : e)));
       if (wasUnread) setFolders((p) => p.map((f) => (f.id === active ? { ...f, unreadEmails: Math.max(0, f.unreadEmails - 1) } : f)));
     }
@@ -197,6 +256,8 @@ export function MailClient({ owner, accounts, initialAccount, initialFolder, ini
   const currentAccount = accounts.find((a) => a.accountId === account);
   const currentEmail = currentAccount?.email ?? "";
   const canArchive = folders.some((f) => f.role === "archive") && activeFolder?.role !== "archive";
+  const body = useMemo(() => (sel ? prepareBody(sel, account) : null), [sel, account]);
+  const visibleAtts = sel && body ? sel.attachments.filter((a) => !body.inlineBlobs.has(a.blobId)) : [];
 
   if (admin) return <Admin onBack={() => setAdmin(false)} />;
   if (settings) return <Settings account={currentAccount} onBack={() => setSettings(false)} />;
@@ -323,15 +384,20 @@ export function MailClient({ owner, accounts, initialAccount, initialFolder, ini
               </div>
             </div>
             <div className="reader-body">
-              {looksHtml(sel.html) ? (
-                <HtmlBody html={sel.html!} />
+              {body!.kind === "html" ? (
+                <HtmlBody html={showQuoted ? body!.full : body!.main} reflow={body!.reflow} />
               ) : (
-                <div className="reader-text">{sel.text || stripTags(sel.html) || "(message vide)"}</div>
+                <div className="reader-text">{showQuoted ? body!.full : body!.main}</div>
               )}
-              {sel.attachments.length > 0 && (
+              {body!.hasQuote && (
+                <button className="quote-toggle" onClick={() => setShowQuoted((v) => !v)}>
+                  {showQuoted ? <><FiChevronUp /> Masquer le message cité</> : <><FiMoreHorizontal /> Afficher le message cité</>}
+                </button>
+              )}
+              {visibleAtts.length > 0 && (
                 <div className="attach">
-                  {sel.attachments.map((a, i) => (
-                    <a key={i} className="attach-chip dl" href={`/api/mail/download?account=${account}&blobId=${encodeURIComponent(a.blobId)}&name=${encodeURIComponent(a.name)}`} target="_blank" rel="noopener noreferrer" title={`${a.name} · ${fmtSize(a.size)}`}>
+                  {visibleAtts.map((a, i) => (
+                    <a key={i} className="attach-chip dl" href={attachmentUrl(account, a)} target="_blank" rel="noopener noreferrer" title={`${a.name} · ${fmtSize(a.size)}`}>
                       <FiPaperclip /><span className="attach-name">{a.name}</span><span className="attach-size">{fmtSize(a.size)}</span><FiDownload />
                     </a>
                   ))}
@@ -350,7 +416,7 @@ export function MailClient({ owner, accounts, initialAccount, initialFolder, ini
           from={currentEmail}
           defaultTo={sel ? sel.from[0]?.email ?? "" : ""}
           defaultSubject={sel ? (sel.subject.startsWith("Re:") ? sel.subject : `Re: ${sel.subject}`) : ""}
-          defaultBody={sel ? `\n\n----- Message d'origine -----\nDe : ${addrLabel(sel.from)}\nDate : ${fmtFull(sel.receivedAt)}\nObjet : ${sel.subject}\n\n${(sel.text || stripTags(sel.html) || sel.preview || "").split("\n").map((l) => "> " + l).join("\n")}` : ""}
+          defaultBody={sel ? `\n\n----- Message d'origine -----\nDe : ${addrLabel(sel.from)}\nDate : ${fmtFull(sel.receivedAt)}\nObjet : ${sel.subject}\n\n${splitQuotedText(sel.text || stripTags(sel.html) || sel.preview || "").main.split("\n").map((l) => "> " + l).join("\n")}` : ""}
           onClose={() => setCompose(false)}
           onSent={() => setCompose(false)}
         />
@@ -374,13 +440,19 @@ function Skeleton() {
 
 // Sized to its content so the message scrolls with the reader instead of inside a second scrollbar.
 // `allow-same-origin` is what makes the height readable; scripts and forms stay blocked by the sandbox.
-function HtmlBody({ html }: { html: string }) {
+const REFLOW_CSS = "@media (max-width:640px){table{width:100%!important;max-width:100%!important;min-width:0!important}td,th{width:auto!important;min-width:0!important}div{max-width:100%!important}}";
+function HtmlBody({ html, reflow }: { html: string; reflow: boolean }) {
   const ref = useRef<HTMLIFrameElement>(null);
   const [height, setHeight] = useState(240);
   const fit = () => {
     try {
-      const doc = ref.current?.contentDocument;
-      if (doc) setHeight(Math.min(30000, Math.max(120, doc.documentElement.scrollHeight + 24)));
+      const frame = ref.current, doc = frame?.contentDocument;
+      if (!frame || !doc?.body) return;
+      // Newsletters laid out at fixed widths wider than the reader get scaled down instead of clipped.
+      doc.body.style.setProperty("zoom", "");
+      const over = Math.max(doc.documentElement.scrollWidth, doc.body.scrollWidth) / Math.max(1, frame.clientWidth);
+      if (over > 1.02) doc.body.style.setProperty("zoom", String(1 / over));
+      setHeight(Math.min(30000, Math.max(120, doc.documentElement.scrollHeight + 24)));
     } catch { /* navigated away from srcdoc; keep last height */ }
   };
   return (
@@ -389,7 +461,7 @@ function HtmlBody({ html }: { html: string }) {
       onLoad={fit}
       style={{ height }}
       sandbox="allow-same-origin allow-popups allow-popups-to-escape-sandbox"
-      srcDoc={`<!doctype html><html><head><base target="_blank"><meta name="color-scheme" content="light"><style>html{overflow-y:hidden}body{margin:18px 20px;font-family:-apple-system,Segoe UI,system-ui,sans-serif;color:#1a1a1a;line-height:1.55;word-break:break-word}a{color:#2b6df6}img{max-width:100%;height:auto}</style></head><body>${html}</body></html>`}
+      srcDoc={`<!doctype html><html><head><meta charset="utf-8"><base target="_blank"><meta name="color-scheme" content="light"><style>html{overflow-y:hidden}body{margin:18px 20px;font-family:-apple-system,Segoe UI,system-ui,sans-serif;color:#1a1a1a;line-height:1.55;word-break:break-word;overflow-x:auto}a{color:#2b6df6}img{max-width:100%;height:auto}pre{white-space:pre-wrap}blockquote{margin:8px 0 8px 4px;padding-left:12px;border-left:3px solid #d6d6d6;color:#444}@media (max-width:640px){body{margin:12px}}${reflow ? REFLOW_CSS : ""}</style></head><body>${html}</body></html>`}
       title="message"
     />
   );
