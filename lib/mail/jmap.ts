@@ -181,7 +181,7 @@ export async function getBlob(c: Creds, accountId: string, blobId: string, name:
 
 export async function sendEmail(
   c: Creds, accountId: string,
-  msg: { to: Addr[]; cc?: Addr[]; subject: string; text: string; html?: string | null; attachments?: SendAttachment[] }
+  msg: { to: Addr[]; cc?: Addr[]; subject: string; text: string; html?: string | null; attachments?: SendAttachment[]; from?: string | null }
 ): Promise<void> {
   const boxes = await listMailboxes(c, accountId);
   const drafts = boxes.find((b) => b.role === "drafts");
@@ -189,7 +189,11 @@ export async function sendEmail(
   if (!drafts) throw new Error("no_drafts_mailbox");
   const idr = await request(c, [["Identity/get", { accountId, ids: null }, "0"]], [CORE, SUBMISSION]);
   const identities = idr.methodResponses?.[0]?.[1]?.list ?? [];
-  const identity = identities.find((i: any) => i.email?.toLowerCase() === c.email.toLowerCase()) ?? identities[0];
+  // Send as the mailbox's own address; the identity list is not ordered (postmaster@ may come first).
+  const want = (msg.from ?? "").toLowerCase();
+  const identity = identities.find((i: any) => want && i.email?.toLowerCase() === want)
+    ?? identities.find((i: any) => i.email?.toLowerCase() === c.email.toLowerCase())
+    ?? identities[0];
   if (!identity) throw new Error("no_identity");
   const bodyValues: Record<string, { value: string }> = { text: { value: msg.text } };
   if (msg.html) bodyValues.html = { value: msg.html };

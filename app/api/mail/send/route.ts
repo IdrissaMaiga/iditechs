@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getOwner } from "@/lib/mail/owner";
-import { adminCreds, sendEmail, uploadBlob, type SendAttachment } from "@/lib/mail/jmap";
+import { adminCreds, listAccounts, sendEmail, uploadBlob, type SendAttachment } from "@/lib/mail/jmap";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -34,12 +34,14 @@ export async function POST(req: NextRequest) {
       const up = await uploadBlob(adminCreds(), account, buf, f.type || "application/octet-stream");
       attachments.push({ blobId: up.blobId, type: up.type, name: f.name || "fichier" });
     }
+    const acct = (await listAccounts()).find((a) => a.accountId === account);
     await sendEmail(adminCreds(), account, {
       to: toList,
       cc: parseAddrs(String(form.get("cc") ?? "")),
       subject: String(form.get("subject") ?? "").trim() || "(sans objet)",
       text: String(form.get("text") ?? ""),
       attachments,
+      from: acct?.email ?? null,
     });
     return NextResponse.json({ ok: true });
   } catch (e) {
