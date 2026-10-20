@@ -44,8 +44,8 @@ My personal portfolio website with an interactive AI chat feature, 3D graphics, 
 ### Installation
 
 ```bash
-git clone https://github.com/IdrissaMaiga/portfolio.git
-cd portfolio
+git clone https://github.com/IdrissaMaiga/iditechs.git
+cd iditechs
 npm install
 ```
 

@@ -6,7 +6,7 @@ Next.js 14 portfolio with 3D (Three.js/R3F), AI chatbot (Gemini), S3-backed blog
 ## Key Info
 - **Live**: https://idrissamaiga.iditechs.com (portfolio) · https://iditechs.com and https://www.iditechs.com (IDITECHS company page, same app, served from `app/company` by the host guard in `middleware.ts`)
 - **Email**: idrissa.maiga@iditechs.com
-- **GitHub**: IdrissaMaiga/portfolio
+- **GitHub**: IdrissaMaiga/iditechs
 - **Server**: VPS2 `projexel-vps2` (76.13.13.52): container `iditechs_web` (127.0.0.1:3420, `/opt/iditechs-web`, env in `/opt/iditechs-web/.env`, root-only), Caddy `/etc/caddy/Caddyfile`
 - **Database**: PostgreSQL 17 container `iditechs_postgres` on VPS2 (127.0.0.1:5439, db `iditechs`, `/opt/iditechs-db`); nightly dump 03:17 to `/opt/iditechs-db/backups` (14 days). Neon is the old database, frozen since 2026-10-20
 - **Storage**: Garage S3 bucket `portfolio-uploads` on VPS2. Public read: https://media.iditechs.com (read-only). Signed writes: https://s3.iditechs.com from outside, `http://127.0.0.1:3910` from the app. Code: `lib/storage.ts`. The old R2 bucket (`pub-5dbae7ae21f345449868f710152b690e.r2.dev`) is a frozen rollback copy

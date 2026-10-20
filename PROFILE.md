@@ -107,7 +107,7 @@ September 2023 – February 2027 (Expected)
 | **FilmuApp-MERN-STACK** | JavaScript, React | Full streaming platform — HLS video, live TV, subscriptions, admin dashboard, Prisma/MongoDB | 14 | 0 |
 | **Claude-Code-Security-Analysis** | Python | Security analysis of Claude Code rate limiting — 7 live API tests, responsible disclosure via HackerOne #3642470 | 4 | 1 |
 | **SignalApp** | TypeScript, React Native | Forex/binary trading signals — Firebase Realtime DB, Google Sign-In, role-based access, Expo 52 | 4 | 2 |
-| **Idrissamaigainfo** | TypeScript, Next.js | Personal portfolio — 3D Three.js hero, AI chat assistant (Groq/DeepSeek), contact form, dark/light mode | 38 | 0 |
+| **iditechs** | TypeScript, Next.js | Personal portfolio — 3D Three.js hero, AI chat assistant (Groq/DeepSeek), contact form, dark/light mode | 38 | 0 |
 
 ### Tier 2: Solid Projects
 
