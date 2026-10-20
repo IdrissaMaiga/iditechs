@@ -8,9 +8,9 @@ Next.js 14 portfolio with 3D (Three.js/R3F), AI chatbot (Gemini), S3-backed blog
 - **Email**: idrissa.maiga@iditechs.com
 - **GitHub**: IdrissaMaiga/portfolio
 - **Server**: VPS2 `projexel-vps2` (76.13.13.52): container `iditechs_web` (127.0.0.1:3420, `/opt/iditechs-web`, env in `/opt/iditechs-web/.env`, root-only), Caddy `/etc/caddy/Caddyfile`
-- **Database**: PostgreSQL 17 container `iditechs_postgres` on VPS2 (127.0.0.1:5439, db `iditechs`, `/opt/iditechs-db`); nightly dump 03:17 to `/opt/iditechs-db/backups` (14 days). Neon is the old database, kept read-only as rollback until ~2026-10-27
+- **Database**: PostgreSQL 17 container `iditechs_postgres` on VPS2 (127.0.0.1:5439, db `iditechs`, `/opt/iditechs-db`); nightly dump 03:17 to `/opt/iditechs-db/backups` (14 days). Neon is the old database, frozen since 2026-10-20
 - **Storage**: Garage S3 bucket `portfolio-uploads` on VPS2. Public read: https://media.iditechs.com (read-only). Signed writes: https://s3.iditechs.com from outside, `http://127.0.0.1:3910` from the app. Code: `lib/storage.ts`. The old R2 bucket (`pub-5dbae7ae21f345449868f710152b690e.r2.dev`) is a frozen rollback copy
-- **Vercel** (idrissamaigas-projects): the old host, project and domains kept for rollback only; do not deploy there
+- **Vercel**: no longer used. Project, domains and token deleted on 2026-10-20
 
 ## Company site (iditechs.com)
 This project also serves the IDITECHS company site. `middleware.ts` host-guards `iditechs.com` / `www.iditechs.com`: `/` and `/company` render the company page, every other path 308-redirects to `/`. The matcher excludes `_next/`, `api/`, `favicon.ico`, `robots.txt`, `sitemap.xml` and `logos/`. `www` 308s to the apex. `idrissamaiga.iditechs.com` is unaffected: blog, mail and stats exist only there.
@@ -56,8 +56,8 @@ bash scripts/deploy-vps.sh   # uploads the tree, rebuilds the Docker image on VP
 ```
 The script prints a one-line rollback to the previous image (`iditechs-web:previous`). Env changes: edit `/opt/iditechs-web/.env` on VPS2 (root, chmod 600), then rerun the script or restart the container. A local `next build` needs `NEXTAUTH_URL` exported in the shell. Schema changes: write the SQL in `prisma/migrations/` and apply it with `docker exec -i iditechs_postgres psql`; there is no migration history table, so never run `prisma migrate deploy`.
 
-### Rollback to Vercel (until ~2026-10-27)
-Cloudflare DNS back to `A iditechs.com 76.76.21.21`, `CNAME www.iditechs.com cname.vercel-dns.com`, `CNAME idrissamaiga.iditechs.com cname.vercel-dns.com`. Vercel still reads Neon and R2, which stopped receiving writes on 2026-10-20, so anything written since is only on VPS2.
+### Rollback
+There is no Vercel fallback any more (deleted 2026-10-20). Code rollback: the previous Docker image (`iditechs-web:previous`, see the deploy script). Data rollback: the nightly dumps in `/opt/iditechs-db/backups`. Neon and R2 still hold a frozen copy as of 2026-10-20.
 
 ### Admin API auth
 All admin routes require header: `x-admin-key: <ADMIN_API_KEY from .env.local>`
