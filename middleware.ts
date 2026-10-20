@@ -1,5 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { isCompanyHost } from "@/lib/company";
+import { publicUrl } from "@/lib/public-url";
 
 // iditechs.com is served by this project, but only the company page exists on that host:
 // "/" renders app/company, every other page (blog, mail, stats, ...) is sent back to "/".
@@ -7,9 +8,13 @@ export function middleware(req: NextRequest) {
   if (!isCompanyHost(req.headers.get("host"))) return NextResponse.next();
   const { pathname } = req.nextUrl;
   if (pathname === "/" || pathname === "/company") {
-    return NextResponse.rewrite(new URL("/company", req.url));
+    const url = req.nextUrl.clone();
+    url.pathname = "/company";
+    return NextResponse.rewrite(url);
   }
-  return NextResponse.redirect(new URL("/", req.url), 308);
+  // Marketing smart links and the link-in-bio page are shared by both hosts.
+  if (pathname === "/links" || pathname.startsWith("/go/")) return NextResponse.next();
+  return NextResponse.redirect(publicUrl("/", req), 308);
 }
 
 export const config = {

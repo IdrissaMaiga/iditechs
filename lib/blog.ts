@@ -1,4 +1,4 @@
-import { readFromR2, uploadToR2 } from "./r2";
+import { deleteObject, getObjectText, putObject } from "./storage";
 import readingTime from "reading-time";
 
 const INDEX_KEY = "blog/index.json";
@@ -20,12 +20,12 @@ export interface BlogPost extends BlogPostMeta {
 }
 
 async function getIndex(): Promise<BlogPostMeta[]> {
-  const raw = await readFromR2(INDEX_KEY);
+  const raw = await getObjectText(INDEX_KEY);
   if (!raw) return [];
   try {
     return JSON.parse(raw);
   } catch (err) {
-    console.error("Failed to parse blog index from R2:", err);
+    console.error("Failed to parse blog index from storage:", err);
     return [];
   }
 }
@@ -34,14 +34,14 @@ async function saveIndex(index: BlogPostMeta[]): Promise<void> {
   const sorted = index.sort(
     (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
   );
-  await uploadToR2(INDEX_KEY, JSON.stringify(sorted, null, 2), "application/json");
+  await putObject(INDEX_KEY, JSON.stringify(sorted, null, 2), "application/json");
 }
 
 export async function getAllPosts(): Promise<BlogPost[]> {
   const index = await getIndex();
   const posts = await Promise.all(
     index.map(async (meta) => {
-      const raw = await readFromR2(`${POST_PREFIX}${meta.slug}.json`);
+      const raw = await getObjectText(`${POST_PREFIX}${meta.slug}.json`);
       if (!raw) return null;
       try {
         const data = JSON.parse(raw);
@@ -61,7 +61,7 @@ export async function getPostBySlug(slug: string): Promise<BlogPost | null> {
   const meta = index.find((p) => p.slug === slug);
   if (!meta) return null;
 
-  const raw = await readFromR2(`${POST_PREFIX}${slug}.json`);
+  const raw = await getObjectText(`${POST_PREFIX}${slug}.json`);
   if (!raw) return null;
 
   try {
@@ -108,7 +108,7 @@ export async function createPost(post: {
     linkedinPosted: false,
   };
 
-  await uploadToR2(
+  await putObject(
     `${POST_PREFIX}${slug}.json`,
     JSON.stringify({ content: post.content }, null, 2),
     "application/json"
@@ -142,7 +142,7 @@ export async function updatePost(
   if (updates.linkedinPosted !== undefined) index[idx].linkedinPosted = updates.linkedinPosted;
 
   if (updates.content !== undefined) {
-    await uploadToR2(
+    await putObject(
       `${POST_PREFIX}${slug}.json`,
       JSON.stringify({ content: updates.content }, null, 2),
       "application/json"
@@ -157,7 +157,6 @@ export async function deletePost(slug: string): Promise<void> {
   const filtered = index.filter((p) => p.slug !== slug);
   if (filtered.length === index.length) throw new Error(`Post "${slug}" not found`);
 
-  const { deleteFromR2 } = await import("./r2");
-  await deleteFromR2(`${POST_PREFIX}${slug}.json`);
+  await deleteObject(`${POST_PREFIX}${slug}.json`);
   await saveIndex(filtered);
 }

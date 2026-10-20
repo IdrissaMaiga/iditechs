@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { uploadToR2 } from "@/lib/r2";
+import { putObject } from "@/lib/storage";
 
 export const dynamic = "force-dynamic";
 
@@ -88,7 +88,7 @@ export async function POST(req: NextRequest) {
       const ext = mimeType === "image/jpeg" ? "jpg" : mimeType === "image/webp" ? "webp" : "png";
       const base = (filename || `generated-${Date.now()}`).replace(/\.(png|jpe?g|webp)$/i, "");
       const key = `blog/${base}.${ext}`;
-      const url = await uploadToR2(key, imageBuffer, mimeType);
+      const url = await putObject(key, imageBuffer, mimeType);
 
       return NextResponse.json({ success: true, url, key });
     }
@@ -111,7 +111,7 @@ export async function POST(req: NextRequest) {
     const buffer = Buffer.from(await file.arrayBuffer());
     const ext = file.name.split(".").pop() || "png";
     const key = `blog/${Date.now()}-${file.name.replace(/[^a-zA-Z0-9._-]/g, "")}`;
-    const url = await uploadToR2(key, buffer, file.type || `image/${ext}`);
+    const url = await putObject(key, buffer, file.type || `image/${ext}`);
 
     return NextResponse.json({ success: true, url, key });
   }

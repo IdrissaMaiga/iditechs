@@ -2,9 +2,9 @@ import type { Metadata } from "next";
 import Image from "next/image";
 import { company, legalLine } from "@/lib/company";
 
-const R2 = "https://pub-5dbae7ae21f345449868f710152b690e.r2.dev";
-const heroImage = `${R2}/company/hero.jpg`;
-const ogImage = `${R2}/company/og.png`;
+const MEDIA = "https://media.iditechs.com";
+const heroImage = `${MEDIA}/company/hero.jpg`;
+const ogImage = `${MEDIA}/company/og.png`;
 
 export const metadata: Metadata = {
   title: "IDITECHS · Services informatiques à Bamako",
