@@ -12,12 +12,12 @@ function json(data: unknown, status = 200) {
 
 export async function GET(req: NextRequest) {
   const { searchParams } = req.nextUrl;
-  const app = searchParams.get("app");
+  const tag = searchParams.get("tag");
 
-  if (app) {
+  if (tag) {
     const instances = await db.waInstance.findMany({
-      where: { apps: { has: app } },
-      select: { instanceId: true, name: true, phoneNumber: true, status: true, webhookUrl: true },
+      where: { tags: { has: tag } },
+      select: { instanceId: true, name: true, phoneNumber: true, status: true, webhookUrl: true, tags: true },
     });
     return json({
       ok: true,
@@ -28,6 +28,7 @@ export async function GET(req: NextRequest) {
         phoneNumber: i.phoneNumber,
         status: i.status,
         webhookUrl: i.webhookUrl,
+        tags: i.tags,
       })),
     });
   }
@@ -114,9 +115,9 @@ export async function POST(req: NextRequest) {
       return json({ ok: true, result });
     }
 
-    if (action === "assign") {
-      const { id, apps } = body as { id: string; apps: string[] };
-      await db.waInstance.update({ where: { id }, data: { apps: apps ?? [] } });
+    if (action === "tags") {
+      const { id, tags } = body as { id: string; tags: string[] };
+      await db.waInstance.update({ where: { id }, data: { tags: tags ?? [] } });
       return json({ ok: true });
     }
 

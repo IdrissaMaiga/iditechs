@@ -3,7 +3,7 @@
 import { useCallback, useRef, useState } from "react";
 import {
   FiPlus, FiTrash2, FiRefreshCw, FiSmartphone, FiWifi, FiWifiOff,
-  FiLink, FiTag, FiCheck, FiX, FiCopy, FiLogOut, FiGlobe,
+  FiLink, FiCheck, FiX, FiCopy, FiLogOut, FiGlobe,
 } from "react-icons/fi";
 import { signOut } from "next-auth/react";
 
@@ -12,7 +12,7 @@ type Instance = {
   instanceId: string;
   name: string;
   phoneNumber: string | null;
-  apps: string[];
+  tags: string[];
   channel: string;
   status: string;
   webhookUrl: string | null;
@@ -20,7 +20,6 @@ type Instance = {
   updatedAt: string;
 };
 
-const APPS = ["yorognini", "djarabbi", "filmu", "iditechs"];
 const API_URL = "https://wa.projexel.eu";
 
 const STATUS_COLORS: Record<string, string> = {
@@ -47,7 +46,8 @@ export function WaClient({ initialInstances }: { initialInstances: Instance[] })
   const [pairPhone, setPairPhone] = useState<Record<string, string>>({});
   const [qrData, setQrData] = useState<Record<string, string>>({});
   const [pairCode, setPairCode] = useState<Record<string, string>>({});
-  const [assigningApp, setAssigningApp] = useState<string | null>(null);
+  const [editingTags, setEditingTags] = useState<string | null>(null);
+  const [tagInput, setTagInput] = useState("");
   const [editingWebhook, setEditingWebhook] = useState<string | null>(null);
   const [webhookInput, setWebhookInput] = useState<Record<string, string>>({});
   const [showConfig, setShowConfig] = useState<string | null>(null);
@@ -142,21 +142,27 @@ export function WaClient({ initialInstances }: { initialInstances: Instance[] })
     }
   };
 
-  const handleToggleApp = async (inst: Instance, app: string) => {
+  const handleAddTag = async (inst: Instance) => {
+    const t = tagInput.trim().toLowerCase();
+    if (!t || (inst.tags ?? []).includes(t)) { setTagInput(""); return; }
     if (busyRef.current) return;
     busyRef.current = true;
-    const current = inst.apps ?? [];
-    const next = current.includes(app) ? current.filter((a) => a !== app) : [...current, app];
-    setInstances((prev) => prev.map((i) => (i.id === inst.id ? { ...i, apps: next } : i)));
-    await api({ action: "assign", id: inst.id, apps: next });
+    const next = [...(inst.tags ?? []), t];
+    setInstances((prev) => prev.map((i) => (i.id === inst.id ? { ...i, tags: next } : i)));
+    setTagInput("");
+    await api({ action: "tags", id: inst.id, tags: next });
     await refresh();
     busyRef.current = false;
   };
 
-  const handleClearApps = async (inst: Instance) => {
-    await api({ action: "assign", id: inst.id, apps: [] });
-    setAssigningApp(null);
+  const handleRemoveTag = async (inst: Instance, tag: string) => {
+    if (busyRef.current) return;
+    busyRef.current = true;
+    const next = (inst.tags ?? []).filter((t) => t !== tag);
+    setInstances((prev) => prev.map((i) => (i.id === inst.id ? { ...i, tags: next } : i)));
+    await api({ action: "tags", id: inst.id, tags: next });
     await refresh();
+    busyRef.current = false;
   };
 
   const handleSaveWebhook = async (inst: Instance) => {
@@ -209,7 +215,7 @@ export function WaClient({ initialInstances }: { initialInstances: Instance[] })
             <h3 style={{ margin: "0 0 12px", fontSize: 16 }}>Create New Instance</h3>
             <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
               <input
-                placeholder="Instance name (e.g. yorognini-prod)"
+                placeholder="Instance name (e.g. support-bot, notifications)"
                 value={createName}
                 onChange={(e) => setCreateName(e.target.value)}
                 onKeyDown={(e) => e.key === "Enter" && handleCreate()}
@@ -234,7 +240,7 @@ export function WaClient({ initialInstances }: { initialInstances: Instance[] })
           <div style={{ textAlign: "center", padding: 60, color: "#666" }}>
             <FiSmartphone size={48} style={{ marginBottom: 16 }} />
             <p>No WhatsApp instances yet.</p>
-            <p style={{ fontSize: 14 }}>Create one to connect a phone number for your apps.</p>
+            <p style={{ fontSize: 14 }}>Create one to connect a phone number. Any app, API, or MCP server can use it.</p>
           </div>
         ) : (
           <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
@@ -247,11 +253,8 @@ export function WaClient({ initialInstances }: { initialInstances: Instance[] })
                     <span style={{ fontWeight: 600, fontSize: 16 }}>{inst.name}</span>
                     <button
                       onClick={() => handleRefreshStatus(inst)}
-                      style={{
-                        ...chipStyle(STATUS_COLORS[inst.status] ?? "#666"),
-                        cursor: "pointer", border: "none",
-                      }}
-                      title="Click to refresh status from server"
+                      style={{ ...chipStyle(STATUS_COLORS[inst.status] ?? "#666"), cursor: "pointer", border: "none" }}
+                      title="Click to refresh status"
                     >
                       {inst.status}
                     </button>
@@ -286,21 +289,47 @@ export function WaClient({ initialInstances }: { initialInstances: Instance[] })
                     </button>
                   </span>
                   {inst.phoneNumber && <span><strong style={{ color: "#aaa" }}>Phone:</strong> +{inst.phoneNumber}</span>}
-                  {inst.apps?.length > 0 && (
-                    <span>
-                      <FiTag size={12} style={{ verticalAlign: -1 }} />{" "}
-                      <strong style={{ color: "#aaa" }}>Apps:</strong>{" "}
-                      <span style={{ color: "#22c55e", fontWeight: 600 }}>{inst.apps.join(", ")}</span>
-                    </span>
-                  )}
                   {inst.webhookUrl && (
                     <span>
                       <FiGlobe size={12} style={{ verticalAlign: -1 }} />{" "}
-                      <strong style={{ color: "#aaa" }}>Webhook:</strong>{" "}
                       <span style={{ color: "#3b82f6" }}>{inst.webhookUrl}</span>
                     </span>
                   )}
                   <span>Created {new Date(inst.createdAt).toLocaleDateString("fr-FR")}</span>
+                </div>
+
+                {/* Tags */}
+                <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 12, alignItems: "center" }}>
+                  {(inst.tags ?? []).map((tag) => (
+                    <span key={tag} style={{ ...chipStyle("#3b82f6"), display: "inline-flex", alignItems: "center", gap: 4 }}>
+                      {tag}
+                      <button onClick={() => handleRemoveTag(inst, tag)} style={{ background: "none", border: "none", color: "#3b82f6", cursor: "pointer", padding: 0, lineHeight: 1 }}>
+                        <FiX size={10} />
+                      </button>
+                    </span>
+                  ))}
+                  {editingTags === inst.id ? (
+                    <div style={{ display: "inline-flex", gap: 4, alignItems: "center" }}>
+                      <input
+                        placeholder="Add tag..."
+                        value={tagInput}
+                        onChange={(e) => setTagInput(e.target.value)}
+                        onKeyDown={(e) => { if (e.key === "Enter") handleAddTag(inst); if (e.key === "Escape") setEditingTags(null); }}
+                        autoFocus
+                        style={{ ...inputStyle, width: 140, height: 28, fontSize: 12, minWidth: 100, padding: "4px 8px" }}
+                      />
+                      <button onClick={() => handleAddTag(inst)} disabled={!tagInput.trim()} style={btnStyleSm("#22c55e")} title="Add">
+                        <FiCheck size={12} />
+                      </button>
+                      <button onClick={() => { setEditingTags(null); setTagInput(""); }} style={btnStyleSm("#666")} title="Done">
+                        <FiX size={12} />
+                      </button>
+                    </div>
+                  ) : (
+                    <button onClick={() => setEditingTags(inst.id)} style={{ ...chipStyle("#555"), cursor: "pointer", border: "none" }}>
+                      <FiPlus size={10} style={{ verticalAlign: -1 }} /> tag
+                    </button>
+                  )}
                 </div>
 
                 {/* Actions Row */}
@@ -321,33 +350,11 @@ export function WaClient({ initialInstances }: { initialInstances: Instance[] })
                     </button>
                   </div>
 
-                  {/* App assignment — toggle chips */}
-                  {assigningApp === inst.id ? (
-                    <div style={{ display: "flex", gap: 4, alignItems: "center", flexWrap: "wrap" }}>
-                      {APPS.map((a) => {
-                        const active = (inst.apps ?? []).includes(a);
-                        return (
-                          <button key={a} onClick={() => handleToggleApp(inst, a)} disabled={loading} style={btnStyle(active ? "#22c55e" : "#1e293b", active ? "#000" : undefined)}>
-                            {active && <FiCheck size={12} />} {a}
-                          </button>
-                        );
-                      })}
-                      {(inst.apps ?? []).length > 0 && (
-                        <button onClick={() => handleClearApps(inst)} style={btnStyle("#7f1d1d")}>Clear</button>
-                      )}
-                      <button onClick={() => setAssigningApp(null)} style={btnStyle("#333")}><FiX size={14} /></button>
-                    </div>
-                  ) : (
-                    <button onClick={() => setAssigningApp(inst.id)} style={btnStyle("#1e293b")}>
-                      <FiTag size={14} /> {(inst.apps ?? []).length > 0 ? `Apps: ${inst.apps.join(", ")}` : "Assign Apps"}
-                    </button>
-                  )}
-
                   {/* Webhook URL */}
                   {editingWebhook === inst.id ? (
                     <div style={{ display: "flex", gap: 4, alignItems: "center" }}>
                       <input
-                        placeholder="https://your-app.com/api/webhook"
+                        placeholder="https://your-service.com/webhook"
                         value={webhookInput[inst.id] ?? ""}
                         onChange={(e) => setWebhookInput((p) => ({ ...p, [inst.id]: e.target.value }))}
                         onKeyDown={(e) => e.key === "Enter" && handleSaveWebhook(inst)}
@@ -372,12 +379,15 @@ export function WaClient({ initialInstances }: { initialInstances: Instance[] })
                 {showConfig === inst.id && (
                   <div style={{ marginTop: 12, padding: 16, background: "#0d0d18", borderRadius: 8, border: "1px solid #2a2a35" }}>
                     <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 8, color: "#aaa" }}>Integration Config</div>
+                    <p style={{ fontSize: 12, color: "#555", margin: "0 0 12px" }}>
+                      Use these values in any app, API client, or MCP server to interact with this WhatsApp number.
+                    </p>
                     {[
                       ["API URL", API_URL],
                       ["Instance ID", inst.instanceId],
                       ["Phone", inst.phoneNumber ? `+${inst.phoneNumber}` : "(not paired)"],
                       ["Webhook", inst.webhookUrl ?? "(not set)"],
-                      ["Apps", inst.apps?.join(", ") || "(none)"],
+                      ["Tags", (inst.tags ?? []).join(", ") || "(none)"],
                     ].map(([label, val]) => (
                       <div key={label} style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6, fontSize: 13 }}>
                         <span style={{ color: "#666", width: 90, flexShrink: 0 }}>{label}:</span>
@@ -389,15 +399,26 @@ export function WaClient({ initialInstances }: { initialInstances: Instance[] })
                         )}
                       </div>
                     ))}
-                    <button
-                      onClick={() => {
-                        const cfg = JSON.stringify({ apiUrl: API_URL, instanceId: inst.instanceId, phoneNumber: inst.phoneNumber, webhookUrl: inst.webhookUrl, apps: inst.apps }, null, 2);
-                        copyField(`cfg-json-${inst.id}`, cfg);
-                      }}
-                      style={{ ...btnStyle("#1e293b"), marginTop: 8 }}
-                    >
-                      <FiCopy size={14} /> Copy as JSON
-                    </button>
+                    <div style={{ marginTop: 10, display: "flex", gap: 8 }}>
+                      <button
+                        onClick={() => {
+                          const cfg = JSON.stringify({ apiUrl: API_URL, instanceId: inst.instanceId, phoneNumber: inst.phoneNumber, webhookUrl: inst.webhookUrl, tags: inst.tags }, null, 2);
+                          copyField(`cfg-json-${inst.id}`, cfg);
+                        }}
+                        style={btnStyle("#1e293b")}
+                      >
+                        <FiCopy size={14} /> Copy JSON
+                      </button>
+                      <button
+                        onClick={() => {
+                          const curl = `curl -X POST ${API_URL}/message/sendText/${inst.instanceId} \\\n  -H "Content-Type: application/json" \\\n  -H "apikey: YOUR_API_KEY" \\\n  -d '{"number":"5511999999999","text":"Hello!"}'`;
+                          copyField(`cfg-curl-${inst.id}`, curl);
+                        }}
+                        style={btnStyle("#1e293b")}
+                      >
+                        <FiCopy size={14} /> Copy cURL example
+                      </button>
+                    </div>
                   </div>
                 )}
 

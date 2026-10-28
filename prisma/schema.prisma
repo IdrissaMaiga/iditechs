@@ -156,7 +156,7 @@ model WaInstance {
   instanceId  String   @unique @map("instance_id")
   name        String
   phoneNumber String?  @map("phone_number")
-  apps        String[] @default([])
+  tags        String[] @default([])
   channel     String   @default("baileys")
   status      String   @default("created")
   webhookUrl  String?  @map("webhook_url")
