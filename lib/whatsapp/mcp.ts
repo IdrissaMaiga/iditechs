@@ -1,6 +1,8 @@
 const WA_MCP_URL = "https://wa.projexel.eu/mcp";
 const WA_MCP_TOKEN = process.env.WA_MCP_TOKEN || "";
 
+export const WA_API_URL = WA_MCP_URL.replace("/mcp", "");
+
 function parseSSE(body: string): Record<string, unknown> {
   for (const line of body.split("\n")) {
     if (line.startsWith("data:")) {
@@ -16,7 +18,7 @@ function parseSSE(body: string): Record<string, unknown> {
   }
 }
 
-export class WaMcp {
+class WaMcp {
   private sid: string | null = null;
 
   private async post(payload: Record<string, unknown>): Promise<Record<string, unknown>> {
@@ -75,12 +77,8 @@ export class WaMcp {
   }
 }
 
-let cached: WaMcp | null = null;
-
 export async function getMcp(): Promise<WaMcp> {
-  if (cached) return cached;
   const m = new WaMcp();
   await m.init();
-  cached = m;
   return m;
 }

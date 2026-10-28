@@ -159,6 +159,7 @@ model WaInstance {
   apps        String[] @default([])
   channel     String   @default("baileys")
   status      String   @default("created")
+  webhookUrl  String?  @map("webhook_url")
   createdAt   DateTime @default(now()) @map("created_at")
   updatedAt   DateTime @updatedAt @map("updated_at")
 

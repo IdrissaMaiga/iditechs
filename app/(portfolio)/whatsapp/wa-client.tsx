@@ -1,9 +1,9 @@
 "use client";
 
-import { useCallback, useState } from "react";
+import { useCallback, useRef, useState } from "react";
 import {
   FiPlus, FiTrash2, FiRefreshCw, FiSmartphone, FiWifi, FiWifiOff,
-  FiLink, FiTag, FiCheck, FiX, FiCopy, FiLogOut,
+  FiLink, FiTag, FiCheck, FiX, FiCopy, FiLogOut, FiGlobe,
 } from "react-icons/fi";
 import { signOut } from "next-auth/react";
 
@@ -15,19 +15,27 @@ type Instance = {
   apps: string[];
   channel: string;
   status: string;
+  webhookUrl: string | null;
   createdAt: string;
   updatedAt: string;
 };
 
 const APPS = ["yorognini", "djarabbi", "filmu", "iditechs"];
+const API_URL = "https://wa.projexel.eu";
 
 const STATUS_COLORS: Record<string, string> = {
   connected: "#22c55e",
+  open: "#22c55e",
   created: "#a855f7",
   connecting: "#f59e0b",
   pairing: "#f59e0b",
   disconnected: "#ef4444",
+  closed: "#ef4444",
 };
+
+function copied(text: string) {
+  navigator.clipboard.writeText(text);
+}
 
 export function WaClient({ initialInstances }: { initialInstances: Instance[] }) {
   const [instances, setInstances] = useState<Instance[]>(initialInstances);
@@ -40,6 +48,11 @@ export function WaClient({ initialInstances }: { initialInstances: Instance[] })
   const [qrData, setQrData] = useState<Record<string, string>>({});
   const [pairCode, setPairCode] = useState<Record<string, string>>({});
   const [assigningApp, setAssigningApp] = useState<string | null>(null);
+  const [editingWebhook, setEditingWebhook] = useState<string | null>(null);
+  const [webhookInput, setWebhookInput] = useState<Record<string, string>>({});
+  const [showConfig, setShowConfig] = useState<string | null>(null);
+  const [copiedField, setCopiedField] = useState<string | null>(null);
+  const busyRef = useRef(false);
 
   const api = useCallback(async (body: Record<string, unknown>) => {
     setError(null);
@@ -103,6 +116,11 @@ export function WaClient({ initialInstances }: { initialInstances: Instance[] })
     await refresh();
   };
 
+  const handleRefreshStatus = async (inst: Instance) => {
+    await api({ action: "refresh-status", id: inst.id });
+    await refresh();
+  };
+
   const handleQr = async (inst: Instance) => {
     const data = await api({ action: "qr", id: inst.id });
     if (data?.result) {
@@ -125,16 +143,33 @@ export function WaClient({ initialInstances }: { initialInstances: Instance[] })
   };
 
   const handleToggleApp = async (inst: Instance, app: string) => {
+    if (busyRef.current) return;
+    busyRef.current = true;
     const current = inst.apps ?? [];
     const next = current.includes(app) ? current.filter((a) => a !== app) : [...current, app];
+    setInstances((prev) => prev.map((i) => (i.id === inst.id ? { ...i, apps: next } : i)));
     await api({ action: "assign", id: inst.id, apps: next });
     await refresh();
+    busyRef.current = false;
   };
 
   const handleClearApps = async (inst: Instance) => {
     await api({ action: "assign", id: inst.id, apps: [] });
     setAssigningApp(null);
     await refresh();
+  };
+
+  const handleSaveWebhook = async (inst: Instance) => {
+    const url = webhookInput[inst.id]?.trim() || null;
+    await api({ action: "webhook", id: inst.id, webhookUrl: url });
+    setEditingWebhook(null);
+    await refresh();
+  };
+
+  const copyField = (key: string, value: string) => {
+    copied(value);
+    setCopiedField(key);
+    setTimeout(() => setCopiedField(null), 1500);
   };
 
   return (
@@ -207,30 +242,28 @@ export function WaClient({ initialInstances }: { initialInstances: Instance[] })
               <div key={inst.id} style={{ background: "#111118", border: "1px solid #2a2a35", borderRadius: 12, padding: 20 }}>
                 {/* Instance Header */}
                 <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
                     <FiSmartphone size={20} color={STATUS_COLORS[inst.status] ?? "#666"} />
                     <span style={{ fontWeight: 600, fontSize: 16 }}>{inst.name}</span>
-                    <span style={{
-                      fontSize: 11,
-                      padding: "2px 8px",
-                      borderRadius: 20,
-                      background: `${STATUS_COLORS[inst.status] ?? "#666"}22`,
-                      color: STATUS_COLORS[inst.status] ?? "#666",
-                      fontWeight: 600,
-                      textTransform: "uppercase",
-                      letterSpacing: "0.05em",
-                    }}>
+                    <button
+                      onClick={() => handleRefreshStatus(inst)}
+                      style={{
+                        ...chipStyle(STATUS_COLORS[inst.status] ?? "#666"),
+                        cursor: "pointer", border: "none",
+                      }}
+                      title="Click to refresh status from server"
+                    >
                       {inst.status}
-                    </span>
+                    </button>
                     <span style={{ fontSize: 12, color: "#555" }}>{inst.channel}</span>
                   </div>
                   <div style={{ display: "flex", gap: 6 }}>
-                    {inst.status !== "connected" && (
+                    {inst.status !== "connected" && inst.status !== "open" && (
                       <button onClick={() => handleConnect(inst)} style={btnStyleSm("#22c55e")} title="Connect">
                         <FiWifi size={14} />
                       </button>
                     )}
-                    {inst.status === "connected" && (
+                    {(inst.status === "connected" || inst.status === "open") && (
                       <button onClick={() => handleDisconnect(inst)} style={btnStyleSm("#f59e0b")} title="Disconnect">
                         <FiWifiOff size={14} />
                       </button>
@@ -246,7 +279,12 @@ export function WaClient({ initialInstances }: { initialInstances: Instance[] })
 
                 {/* Info Row */}
                 <div style={{ display: "flex", gap: 24, flexWrap: "wrap", fontSize: 13, color: "#888", marginBottom: 12 }}>
-                  <span><strong style={{ color: "#aaa" }}>ID:</strong> {inst.instanceId}</span>
+                  <span>
+                    <strong style={{ color: "#aaa" }}>ID:</strong> {inst.instanceId}
+                    <button onClick={() => copyField(`id-${inst.id}`, inst.instanceId)} style={copyBtn}>
+                      {copiedField === `id-${inst.id}` ? <FiCheck size={11} color="#22c55e" /> : <FiCopy size={11} />}
+                    </button>
+                  </span>
                   {inst.phoneNumber && <span><strong style={{ color: "#aaa" }}>Phone:</strong> +{inst.phoneNumber}</span>}
                   {inst.apps?.length > 0 && (
                     <span>
@@ -255,11 +293,18 @@ export function WaClient({ initialInstances }: { initialInstances: Instance[] })
                       <span style={{ color: "#22c55e", fontWeight: 600 }}>{inst.apps.join(", ")}</span>
                     </span>
                   )}
+                  {inst.webhookUrl && (
+                    <span>
+                      <FiGlobe size={12} style={{ verticalAlign: -1 }} />{" "}
+                      <strong style={{ color: "#aaa" }}>Webhook:</strong>{" "}
+                      <span style={{ color: "#3b82f6" }}>{inst.webhookUrl}</span>
+                    </span>
+                  )}
                   <span>Created {new Date(inst.createdAt).toLocaleDateString("fr-FR")}</span>
                 </div>
 
                 {/* Actions Row */}
-                <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
                   <button onClick={() => handleQr(inst)} style={btnStyle("#1e293b")} disabled={loading}>
                     <FiLink size={14} /> QR Code
                   </button>
@@ -275,19 +320,20 @@ export function WaClient({ initialInstances }: { initialInstances: Instance[] })
                       Pair
                     </button>
                   </div>
-                  {/* App assignment — toggle chips, multiple apps per instance */}
+
+                  {/* App assignment — toggle chips */}
                   {assigningApp === inst.id ? (
                     <div style={{ display: "flex", gap: 4, alignItems: "center", flexWrap: "wrap" }}>
                       {APPS.map((a) => {
                         const active = (inst.apps ?? []).includes(a);
                         return (
-                          <button key={a} onClick={() => handleToggleApp(inst, a)} style={btnStyle(active ? "#22c55e" : "#1e293b", active ? "#000" : undefined)}>
+                          <button key={a} onClick={() => handleToggleApp(inst, a)} disabled={loading} style={btnStyle(active ? "#22c55e" : "#1e293b", active ? "#000" : undefined)}>
                             {active && <FiCheck size={12} />} {a}
                           </button>
                         );
                       })}
                       {(inst.apps ?? []).length > 0 && (
-                        <button onClick={() => handleClearApps(inst)} style={btnStyle("#7f1d1d")}>Clear all</button>
+                        <button onClick={() => handleClearApps(inst)} style={btnStyle("#7f1d1d")}>Clear</button>
                       )}
                       <button onClick={() => setAssigningApp(null)} style={btnStyle("#333")}><FiX size={14} /></button>
                     </div>
@@ -296,7 +342,64 @@ export function WaClient({ initialInstances }: { initialInstances: Instance[] })
                       <FiTag size={14} /> {(inst.apps ?? []).length > 0 ? `Apps: ${inst.apps.join(", ")}` : "Assign Apps"}
                     </button>
                   )}
+
+                  {/* Webhook URL */}
+                  {editingWebhook === inst.id ? (
+                    <div style={{ display: "flex", gap: 4, alignItems: "center" }}>
+                      <input
+                        placeholder="https://your-app.com/api/webhook"
+                        value={webhookInput[inst.id] ?? ""}
+                        onChange={(e) => setWebhookInput((p) => ({ ...p, [inst.id]: e.target.value }))}
+                        onKeyDown={(e) => e.key === "Enter" && handleSaveWebhook(inst)}
+                        style={{ ...inputStyle, width: 280, height: 34, fontSize: 13 }}
+                      />
+                      <button onClick={() => handleSaveWebhook(inst)} style={btnStyle("#22c55e", "#000")}><FiCheck size={14} /></button>
+                      <button onClick={() => setEditingWebhook(null)} style={btnStyle("#333")}><FiX size={14} /></button>
+                    </div>
+                  ) : (
+                    <button onClick={() => { setEditingWebhook(inst.id); setWebhookInput((p) => ({ ...p, [inst.id]: inst.webhookUrl ?? "" })); }} style={btnStyle("#1e293b")}>
+                      <FiGlobe size={14} /> {inst.webhookUrl ? "Edit Webhook" : "Set Webhook"}
+                    </button>
+                  )}
+
+                  {/* Integration config */}
+                  <button onClick={() => setShowConfig(showConfig === inst.id ? null : inst.id)} style={btnStyle("#1e293b")}>
+                    <FiCopy size={14} /> Config
+                  </button>
                 </div>
+
+                {/* Integration Config Panel */}
+                {showConfig === inst.id && (
+                  <div style={{ marginTop: 12, padding: 16, background: "#0d0d18", borderRadius: 8, border: "1px solid #2a2a35" }}>
+                    <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 8, color: "#aaa" }}>Integration Config</div>
+                    {[
+                      ["API URL", API_URL],
+                      ["Instance ID", inst.instanceId],
+                      ["Phone", inst.phoneNumber ? `+${inst.phoneNumber}` : "(not paired)"],
+                      ["Webhook", inst.webhookUrl ?? "(not set)"],
+                      ["Apps", inst.apps?.join(", ") || "(none)"],
+                    ].map(([label, val]) => (
+                      <div key={label} style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6, fontSize: 13 }}>
+                        <span style={{ color: "#666", width: 90, flexShrink: 0 }}>{label}:</span>
+                        <code style={{ color: "#e5e5e5", flex: 1, wordBreak: "break-all" }}>{val}</code>
+                        {val && !val.startsWith("(") && (
+                          <button onClick={() => copyField(`cfg-${inst.id}-${label}`, val)} style={copyBtn}>
+                            {copiedField === `cfg-${inst.id}-${label}` ? <FiCheck size={11} color="#22c55e" /> : <FiCopy size={11} />}
+                          </button>
+                        )}
+                      </div>
+                    ))}
+                    <button
+                      onClick={() => {
+                        const cfg = JSON.stringify({ apiUrl: API_URL, instanceId: inst.instanceId, phoneNumber: inst.phoneNumber, webhookUrl: inst.webhookUrl, apps: inst.apps }, null, 2);
+                        copyField(`cfg-json-${inst.id}`, cfg);
+                      }}
+                      style={{ ...btnStyle("#1e293b"), marginTop: 8 }}
+                    >
+                      <FiCopy size={14} /> Copy as JSON
+                    </button>
+                  </div>
+                )}
 
                 {/* QR Code Display */}
                 {qrData[inst.id] && (
@@ -318,10 +421,7 @@ export function WaClient({ initialInstances }: { initialInstances: Instance[] })
                   <div style={{ marginTop: 12, padding: "12px 16px", background: "#1a1a2e", borderRadius: 8, display: "inline-flex", alignItems: "center", gap: 12 }}>
                     <span style={{ fontSize: 13, color: "#888" }}>Pairing code:</span>
                     <code style={{ fontSize: 20, fontWeight: 700, color: "#22c55e", letterSpacing: "0.15em" }}>{pairCode[inst.id]}</code>
-                    <button
-                      onClick={() => navigator.clipboard.writeText(pairCode[inst.id])}
-                      style={{ background: "none", border: "none", color: "#666", cursor: "pointer" }}
-                    >
+                    <button onClick={() => copied(pairCode[inst.id])} style={copyBtn}>
                       <FiCopy size={16} />
                     </button>
                   </div>
@@ -357,4 +457,15 @@ const inputStyle: React.CSSProperties = {
   background: "#1a1a25", border: "1px solid #2a2a35", borderRadius: 8,
   padding: "8px 12px", color: "#e5e5e5", fontSize: 14, outline: "none",
   flex: 1, minWidth: 200,
+};
+
+const chipStyle = (color: string): React.CSSProperties => ({
+  fontSize: 11, padding: "2px 8px", borderRadius: 20,
+  background: `${color}22`, color, fontWeight: 600,
+  textTransform: "uppercase", letterSpacing: "0.05em",
+});
+
+const copyBtn: React.CSSProperties = {
+  background: "none", border: "none", color: "#666",
+  cursor: "pointer", padding: 2, marginLeft: 4, verticalAlign: "middle",
 };

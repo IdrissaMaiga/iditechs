@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getOwner } from "@/lib/mail/owner";
-import { getMcp } from "@/lib/whatsapp/mcp";
+import { getMcp, WA_API_URL } from "@/lib/whatsapp/mcp";
 import { db } from "@/lib/db";
 
 export const runtime = "nodejs";
@@ -10,7 +10,28 @@ function json(data: unknown, status = 200) {
   return NextResponse.json(data, { status });
 }
 
-export async function GET() {
+export async function GET(req: NextRequest) {
+  const { searchParams } = req.nextUrl;
+  const app = searchParams.get("app");
+
+  if (app) {
+    const instances = await db.waInstance.findMany({
+      where: { apps: { has: app } },
+      select: { instanceId: true, name: true, phoneNumber: true, status: true, webhookUrl: true },
+    });
+    return json({
+      ok: true,
+      apiUrl: WA_API_URL,
+      instances: instances.map((i) => ({
+        instanceId: i.instanceId,
+        name: i.name,
+        phoneNumber: i.phoneNumber,
+        status: i.status,
+        webhookUrl: i.webhookUrl,
+      })),
+    });
+  }
+
   if (!(await getOwner())) return json({ ok: false }, 401);
   const instances = await db.waInstance.findMany({ orderBy: { createdAt: "desc" } });
   return json({ ok: true, instances });
@@ -28,20 +49,22 @@ export async function POST(req: NextRequest) {
       const { name, channel = "baileys" } = body as { name: string; channel?: string };
       if (!name) return json({ ok: false, error: "name required" }, 400);
       const result = (await mcp.call("wa_create_instance", { name, channel })) as Record<string, unknown>;
-      const instanceId = (result.instanceId ?? result.id ?? name) as string;
+      const instanceId = (result.id ?? result.instanceId ?? name) as string;
+      const status = (result.status as string) || "created";
       const instance = await db.waInstance.create({
-        data: { instanceId, name, channel: channel as string, status: "created" },
+        data: { instanceId, name, channel: channel as string, status },
       });
-      return json({ ok: true, instance, result });
+      return json({ ok: true, instance, raw: result });
     }
 
     if (action === "connect") {
       const { id } = body as { id: string };
       const inst = await db.waInstance.findUnique({ where: { id } });
       if (!inst) return json({ ok: false, error: "not found" }, 404);
-      const result = await mcp.call("wa_connect_instance", { instanceId: inst.instanceId });
-      await db.waInstance.update({ where: { id }, data: { status: "connecting" } });
-      return json({ ok: true, result });
+      const result = (await mcp.call("wa_connect_instance", { instanceId: inst.instanceId })) as Record<string, unknown>;
+      const status = (result.status as string) || "connecting";
+      await db.waInstance.update({ where: { id }, data: { status } });
+      return json({ ok: true, result, status });
     }
 
     if (action === "disconnect") {
@@ -97,10 +120,22 @@ export async function POST(req: NextRequest) {
       return json({ ok: true });
     }
 
-    if (action === "update-status") {
-      const { id, status } = body as { id: string; status: string };
-      await db.waInstance.update({ where: { id }, data: { status } });
+    if (action === "webhook") {
+      const { id, webhookUrl } = body as { id: string; webhookUrl: string | null };
+      await db.waInstance.update({ where: { id }, data: { webhookUrl } });
       return json({ ok: true });
+    }
+
+    if (action === "refresh-status") {
+      const { id } = body as { id: string };
+      const inst = await db.waInstance.findUnique({ where: { id } });
+      if (!inst) return json({ ok: false, error: "not found" }, 404);
+      const result = (await mcp.call("wa_connect_instance", { instanceId: inst.instanceId })) as Record<string, unknown>;
+      const status = (result.status as string) || inst.status;
+      if (status !== inst.status) {
+        await db.waInstance.update({ where: { id }, data: { status } });
+      }
+      return json({ ok: true, status, raw: result });
     }
 
     return json({ ok: false, error: "unknown action" }, 400);
