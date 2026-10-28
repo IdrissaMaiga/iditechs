@@ -12,7 +12,7 @@ type Instance = {
   instanceId: string;
   name: string;
   phoneNumber: string | null;
-  app: string | null;
+  apps: string[];
   channel: string;
   status: string;
   createdAt: string;
@@ -124,8 +124,15 @@ export function WaClient({ initialInstances }: { initialInstances: Instance[] })
     }
   };
 
-  const handleAssign = async (inst: Instance, app: string | null) => {
-    await api({ action: "assign", id: inst.id, app });
+  const handleToggleApp = async (inst: Instance, app: string) => {
+    const current = inst.apps ?? [];
+    const next = current.includes(app) ? current.filter((a) => a !== app) : [...current, app];
+    await api({ action: "assign", id: inst.id, apps: next });
+    await refresh();
+  };
+
+  const handleClearApps = async (inst: Instance) => {
+    await api({ action: "assign", id: inst.id, apps: [] });
     setAssigningApp(null);
     await refresh();
   };
@@ -241,11 +248,11 @@ export function WaClient({ initialInstances }: { initialInstances: Instance[] })
                 <div style={{ display: "flex", gap: 24, flexWrap: "wrap", fontSize: 13, color: "#888", marginBottom: 12 }}>
                   <span><strong style={{ color: "#aaa" }}>ID:</strong> {inst.instanceId}</span>
                   {inst.phoneNumber && <span><strong style={{ color: "#aaa" }}>Phone:</strong> +{inst.phoneNumber}</span>}
-                  {inst.app && (
+                  {inst.apps?.length > 0 && (
                     <span>
                       <FiTag size={12} style={{ verticalAlign: -1 }} />{" "}
-                      <strong style={{ color: "#aaa" }}>App:</strong>{" "}
-                      <span style={{ color: "#22c55e", fontWeight: 600 }}>{inst.app}</span>
+                      <strong style={{ color: "#aaa" }}>Apps:</strong>{" "}
+                      <span style={{ color: "#22c55e", fontWeight: 600 }}>{inst.apps.join(", ")}</span>
                     </span>
                   )}
                   <span>Created {new Date(inst.createdAt).toLocaleDateString("fr-FR")}</span>
@@ -268,20 +275,25 @@ export function WaClient({ initialInstances }: { initialInstances: Instance[] })
                       Pair
                     </button>
                   </div>
-                  {/* App assignment */}
+                  {/* App assignment — toggle chips, multiple apps per instance */}
                   {assigningApp === inst.id ? (
-                    <div style={{ display: "flex", gap: 4, alignItems: "center" }}>
-                      {APPS.map((a) => (
-                        <button key={a} onClick={() => handleAssign(inst, a)} style={btnStyle(inst.app === a ? "#22c55e" : "#1e293b", inst.app === a ? "#000" : undefined)}>
-                          {a}
-                        </button>
-                      ))}
-                      <button onClick={() => handleAssign(inst, null)} style={btnStyle("#7f1d1d")}>None</button>
+                    <div style={{ display: "flex", gap: 4, alignItems: "center", flexWrap: "wrap" }}>
+                      {APPS.map((a) => {
+                        const active = (inst.apps ?? []).includes(a);
+                        return (
+                          <button key={a} onClick={() => handleToggleApp(inst, a)} style={btnStyle(active ? "#22c55e" : "#1e293b", active ? "#000" : undefined)}>
+                            {active && <FiCheck size={12} />} {a}
+                          </button>
+                        );
+                      })}
+                      {(inst.apps ?? []).length > 0 && (
+                        <button onClick={() => handleClearApps(inst)} style={btnStyle("#7f1d1d")}>Clear all</button>
+                      )}
                       <button onClick={() => setAssigningApp(null)} style={btnStyle("#333")}><FiX size={14} /></button>
                     </div>
                   ) : (
                     <button onClick={() => setAssigningApp(inst.id)} style={btnStyle("#1e293b")}>
-                      <FiTag size={14} /> {inst.app ? `App: ${inst.app}` : "Assign App"}
+                      <FiTag size={14} /> {(inst.apps ?? []).length > 0 ? `Apps: ${inst.apps.join(", ")}` : "Assign Apps"}
                     </button>
                   )}
                 </div>

@@ -92,8 +92,8 @@ export async function POST(req: NextRequest) {
     }
 
     if (action === "assign") {
-      const { id, app } = body as { id: string; app: string | null };
-      await db.waInstance.update({ where: { id }, data: { app } });
+      const { id, apps } = body as { id: string; apps: string[] };
+      await db.waInstance.update({ where: { id }, data: { apps: apps ?? [] } });
       return json({ ok: true });
     }
 

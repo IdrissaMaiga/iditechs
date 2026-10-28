@@ -156,7 +156,7 @@ model WaInstance {
   instanceId  String   @unique @map("instance_id")
   name        String
   phoneNumber String?  @map("phone_number")
-  app         String?
+  apps        String[] @default([])
   channel     String   @default("baileys")
   status      String   @default("created")
   createdAt   DateTime @default(now()) @map("created_at")
