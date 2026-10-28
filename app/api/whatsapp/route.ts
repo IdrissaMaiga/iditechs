@@ -51,9 +51,9 @@ export async function POST(req: NextRequest) {
       if (!name) return json({ ok: false, error: "name required" }, 400);
       const result = (await mcp.call("wa_create_instance", { name, channel })) as Record<string, unknown>;
       const instanceId = (result.id ?? result.instanceId ?? name) as string;
-      const status = (result.status as string) || "created";
+      await mcp.call("wa_connect_instance", { instanceId }).catch(() => {});
       const instance = await db.waInstance.create({
-        data: { instanceId, name, channel: channel as string, status },
+        data: { instanceId, name, channel: channel as string, status: "connecting" },
       });
       return json({ ok: true, instance, raw: result });
     }
@@ -98,6 +98,9 @@ export async function POST(req: NextRequest) {
       const { id } = body as { id: string };
       const inst = await db.waInstance.findUnique({ where: { id } });
       if (!inst) return json({ ok: false, error: "not found" }, 404);
+      if (inst.status !== "connected" && inst.status !== "open") {
+        await mcp.call("wa_connect_instance", { instanceId: inst.instanceId }).catch(() => {});
+      }
       const result = await mcp.call("wa_get_qr_code", { instanceId: inst.instanceId });
       return json({ ok: true, result });
     }
@@ -107,6 +110,9 @@ export async function POST(req: NextRequest) {
       if (!phoneNumber) return json({ ok: false, error: "phoneNumber required" }, 400);
       const inst = await db.waInstance.findUnique({ where: { id } });
       if (!inst) return json({ ok: false, error: "not found" }, 404);
+      if (inst.status !== "connected" && inst.status !== "open") {
+        await mcp.call("wa_connect_instance", { instanceId: inst.instanceId }).catch(() => {});
+      }
       const result = await mcp.call("wa_get_pairing_code", {
         instanceId: inst.instanceId,
         phoneNumber,

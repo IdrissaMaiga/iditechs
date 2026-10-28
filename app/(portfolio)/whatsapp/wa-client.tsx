@@ -289,12 +289,6 @@ export function WaClient({ initialInstances }: { initialInstances: Instance[] })
                     </button>
                   </span>
                   {inst.phoneNumber && <span><strong style={{ color: "#aaa" }}>Phone:</strong> +{inst.phoneNumber}</span>}
-                  {inst.webhookUrl && (
-                    <span>
-                      <FiGlobe size={12} style={{ verticalAlign: -1 }} />{" "}
-                      <span style={{ color: "#3b82f6" }}>{inst.webhookUrl}</span>
-                    </span>
-                  )}
                   <span>Created {new Date(inst.createdAt).toLocaleDateString("fr-FR")}</span>
                 </div>
 
@@ -350,25 +344,6 @@ export function WaClient({ initialInstances }: { initialInstances: Instance[] })
                     </button>
                   </div>
 
-                  {/* Webhook URL */}
-                  {editingWebhook === inst.id ? (
-                    <div style={{ display: "flex", gap: 4, alignItems: "center" }}>
-                      <input
-                        placeholder="https://your-service.com/webhook"
-                        value={webhookInput[inst.id] ?? ""}
-                        onChange={(e) => setWebhookInput((p) => ({ ...p, [inst.id]: e.target.value }))}
-                        onKeyDown={(e) => e.key === "Enter" && handleSaveWebhook(inst)}
-                        style={{ ...inputStyle, width: 280, height: 34, fontSize: 13 }}
-                      />
-                      <button onClick={() => handleSaveWebhook(inst)} style={btnStyle("#22c55e", "#000")}><FiCheck size={14} /></button>
-                      <button onClick={() => setEditingWebhook(null)} style={btnStyle("#333")}><FiX size={14} /></button>
-                    </div>
-                  ) : (
-                    <button onClick={() => { setEditingWebhook(inst.id); setWebhookInput((p) => ({ ...p, [inst.id]: inst.webhookUrl ?? "" })); }} style={btnStyle("#1e293b")}>
-                      <FiGlobe size={14} /> {inst.webhookUrl ? "Edit Webhook" : "Set Webhook"}
-                    </button>
-                  )}
-
                   {/* Integration config */}
                   <button onClick={() => setShowConfig(showConfig === inst.id ? null : inst.id)} style={btnStyle("#1e293b")}>
                     <FiCopy size={14} /> Config
@@ -386,7 +361,6 @@ export function WaClient({ initialInstances }: { initialInstances: Instance[] })
                       ["API URL", API_URL],
                       ["Instance ID", inst.instanceId],
                       ["Phone", inst.phoneNumber ? `+${inst.phoneNumber}` : "(not paired)"],
-                      ["Webhook", inst.webhookUrl ?? "(not set)"],
                       ["Tags", (inst.tags ?? []).join(", ") || "(none)"],
                     ].map(([label, val]) => (
                       <div key={label} style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6, fontSize: 13 }}>
@@ -399,7 +373,36 @@ export function WaClient({ initialInstances }: { initialInstances: Instance[] })
                         )}
                       </div>
                     ))}
-                    <div style={{ marginTop: 10, display: "flex", gap: 8 }}>
+                    {/* Webhook URL — for receiving incoming messages */}
+                    <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6, marginTop: 8, fontSize: 13 }}>
+                      <span style={{ color: "#666", width: 90, flexShrink: 0 }}>Webhook:</span>
+                      {editingWebhook === inst.id ? (
+                        <div style={{ display: "flex", gap: 4, alignItems: "center", flex: 1 }}>
+                          <input
+                            placeholder="https://your-service.com/webhook"
+                            value={webhookInput[inst.id] ?? ""}
+                            onChange={(e) => setWebhookInput((p) => ({ ...p, [inst.id]: e.target.value }))}
+                            onKeyDown={(e) => e.key === "Enter" && handleSaveWebhook(inst)}
+                            autoFocus
+                            style={{ ...inputStyle, height: 30, fontSize: 12, minWidth: 150 }}
+                          />
+                          <button onClick={() => handleSaveWebhook(inst)} style={btnStyleSm("#22c55e")}><FiCheck size={12} /></button>
+                          <button onClick={() => setEditingWebhook(null)} style={btnStyleSm("#666")}><FiX size={12} /></button>
+                        </div>
+                      ) : (
+                        <>
+                          <code style={{ color: "#e5e5e5", flex: 1, wordBreak: "break-all" }}>{inst.webhookUrl || "(not set)"}</code>
+                          <button onClick={() => { setEditingWebhook(inst.id); setWebhookInput((p) => ({ ...p, [inst.id]: inst.webhookUrl ?? "" })); }} style={copyBtn}>
+                            <FiGlobe size={11} />
+                          </button>
+                        </>
+                      )}
+                    </div>
+                    <p style={{ fontSize: 11, color: "#444", margin: "4px 0 10px 98px" }}>
+                      URL where incoming messages are forwarded. Only needed if a service needs to receive messages.
+                    </p>
+
+                    <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
                       <button
                         onClick={() => {
                           const cfg = JSON.stringify({ apiUrl: API_URL, instanceId: inst.instanceId, phoneNumber: inst.phoneNumber, webhookUrl: inst.webhookUrl, tags: inst.tags }, null, 2);
@@ -416,7 +419,7 @@ export function WaClient({ initialInstances }: { initialInstances: Instance[] })
                         }}
                         style={btnStyle("#1e293b")}
                       >
-                        <FiCopy size={14} /> Copy cURL example
+                        <FiCopy size={14} /> Copy cURL
                       </button>
                     </div>
                   </div>
