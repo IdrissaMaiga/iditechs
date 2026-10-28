@@ -30,6 +30,7 @@ const STATUS_COLORS: Record<string, string> = {
   pairing: "#f59e0b",
   disconnected: "#ef4444",
   closed: "#ef4444",
+  gone: "#6b7280",
 };
 
 function copied(text: string) {

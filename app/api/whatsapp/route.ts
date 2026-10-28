@@ -36,6 +36,31 @@ export async function GET(req: NextRequest) {
 
   if (!(await getOwner())) return json({ ok: false }, 401);
   const instances = await db.waInstance.findMany({ orderBy: { createdAt: "desc" } });
+
+  try {
+    const mcp = await getMcp();
+    await Promise.all(
+      instances.map(async (inst) => {
+        try {
+          const r = (await mcp.call("wa_connect_instance", { instanceId: inst.instanceId })) as Record<string, unknown>;
+          const live = (r.status as string) || "connecting";
+          if (live !== inst.status) {
+            await db.waInstance.update({ where: { id: inst.id }, data: { status: live } });
+            inst.status = live;
+          }
+        } catch (e) {
+          const msg = e instanceof Error ? e.message : "";
+          if (msg.includes("not found")) {
+            await db.waInstance.update({ where: { id: inst.id }, data: { status: "gone" } });
+            inst.status = "gone";
+          }
+        }
+      })
+    );
+  } catch {
+    // MCP unreachable — return stale statuses rather than failing
+  }
+
   return json({ ok: true, instances });
 }
 
