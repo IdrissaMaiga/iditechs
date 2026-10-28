@@ -38,7 +38,10 @@ class WaMcp {
       this.sid = res.headers.get("mcp-session-id");
     }
     const text = await res.text();
-    if (!res.ok) return { error: { code: res.status, body: text.slice(0, 800) } };
+    if (!res.ok) {
+      console.error("[mcp]", res.status, text.slice(0, 500));
+      return { error: { code: res.status, body: text.slice(0, 800) } };
+    }
     return parseSSE(text);
   }
 

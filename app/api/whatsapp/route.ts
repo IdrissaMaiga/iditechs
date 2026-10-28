@@ -156,6 +156,7 @@ export async function POST(req: NextRequest) {
 
     return json({ ok: false, error: "unknown action" }, 400);
   } catch (e) {
+    console.error("[whatsapp]", action, e);
     return json({ ok: false, error: e instanceof Error ? e.message : "error" }, 500);
   }
 }
