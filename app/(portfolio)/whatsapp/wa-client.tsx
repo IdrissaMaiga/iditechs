@@ -123,10 +123,8 @@ export function WaClient({ initialInstances }: { initialInstances: Instance[] })
 
   const handleQr = async (inst: Instance) => {
     const data = await api({ action: "qr", id: inst.id });
-    if (data?.result) {
-      const r = data.result as Record<string, unknown>;
-      const qr = (r.qrCode ?? r.qr ?? r.base64 ?? r.code ?? JSON.stringify(r)) as string;
-      setQrData((prev) => ({ ...prev, [inst.id]: qr }));
+    if (data?.qrImage) {
+      setQrData((prev) => ({ ...prev, [inst.id]: data.qrImage }));
     }
   };
 
@@ -134,10 +132,8 @@ export function WaClient({ initialInstances }: { initialInstances: Instance[] })
     const phone = pairPhone[inst.id];
     if (!phone?.trim()) return;
     const data = await api({ action: "pair", id: inst.id, phoneNumber: phone.replace(/\D/g, "") });
-    if (data?.result) {
-      const r = data.result as Record<string, unknown>;
-      const code = (r.pairingCode ?? r.code ?? JSON.stringify(r)) as string;
-      setPairCode((prev) => ({ ...prev, [inst.id]: code }));
+    if (data?.pairingCode) {
+      setPairCode((prev) => ({ ...prev, [inst.id]: data.pairingCode }));
       await refresh();
     }
   };

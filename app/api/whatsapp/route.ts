@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getOwner } from "@/lib/mail/owner";
 import { getMcp, WA_API_URL } from "@/lib/whatsapp/mcp";
 import { db } from "@/lib/db";
+import QRCode from "qrcode";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -101,24 +102,32 @@ export async function POST(req: NextRequest) {
       if (inst.status !== "connected" && inst.status !== "open") {
         await mcp.call("wa_connect_instance", { instanceId: inst.instanceId }).catch(() => {});
       }
-      const result = await mcp.call("wa_get_qr_code", { instanceId: inst.instanceId });
-      return json({ ok: true, result });
+      const result = (await mcp.call("wa_get_qr_code", { instanceId: inst.instanceId })) as Record<string, unknown>;
+      const rawQr = (result.qrCode ?? result.qr ?? result.code ?? "") as string;
+      let qrImage = rawQr;
+      if (rawQr && !rawQr.startsWith("data:") && !rawQr.startsWith("http")) {
+        qrImage = await QRCode.toDataURL(rawQr, { width: 300, margin: 2 });
+      }
+      return json({ ok: true, qrImage });
     }
 
     if (action === "pair") {
       const { id, phoneNumber } = body as { id: string; phoneNumber: string };
       if (!phoneNumber) return json({ ok: false, error: "phoneNumber required" }, 400);
+      const clean = phoneNumber.replace(/\D/g, "");
+      if (clean.length < 5) return json({ ok: false, error: "Phone number too short. Use country code + number, digits only (e.g. 22377374782)" }, 400);
       const inst = await db.waInstance.findUnique({ where: { id } });
       if (!inst) return json({ ok: false, error: "not found" }, 404);
       if (inst.status !== "connected" && inst.status !== "open") {
         await mcp.call("wa_connect_instance", { instanceId: inst.instanceId }).catch(() => {});
       }
-      const result = await mcp.call("wa_get_pairing_code", {
+      const result = (await mcp.call("wa_get_pairing_code", {
         instanceId: inst.instanceId,
-        phoneNumber,
-      });
-      await db.waInstance.update({ where: { id }, data: { phoneNumber, status: "pairing" } });
-      return json({ ok: true, result });
+        phoneNumber: clean,
+      })) as Record<string, unknown>;
+      const pairingCode = (result.pairingCode ?? result.code ?? "") as string;
+      await db.waInstance.update({ where: { id }, data: { phoneNumber: clean, status: "pairing" } });
+      return json({ ok: true, pairingCode });
     }
 
     if (action === "tags") {
