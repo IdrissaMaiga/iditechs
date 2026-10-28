@@ -34,7 +34,7 @@ export default function Navbar() {
   const isOwner = (session?.user as { isOwner?: boolean })?.isOwner === true;
 
   // Mailboxes is owner-only: any signed-in visitor used to see it and land on a dead end.
-  const links = isOwner ? [...navLinks, { name: "Mailboxes", href: "/mail" }] : navLinks;
+  const links = isOwner ? [...navLinks, { name: "Mailboxes", href: "/mail" }, { name: "WhatsApp", href: "/whatsapp" }] : navLinks;
 
   useEffect(() => {
     if (pathname.startsWith("/blog")) {
