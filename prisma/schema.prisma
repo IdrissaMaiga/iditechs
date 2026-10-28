@@ -151,6 +151,20 @@ model Campaign {
   @@map("campaigns")
 }
 
+model WaInstance {
+  id          String   @id @default(cuid())
+  instanceId  String   @unique @map("instance_id")
+  name        String
+  phoneNumber String?  @map("phone_number")
+  app         String?
+  channel     String   @default("baileys")
+  status      String   @default("created")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  @@map("wa_instances")
+}
+
 model CampaignClick {
   id         String   @id @default(cuid())
   campaignId String   @map("campaign_id")
