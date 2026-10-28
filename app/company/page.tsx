@@ -41,6 +41,9 @@ export const metadata: Metadata = {
     images: [ogImage],
   },
   robots: { index: true, follow: true },
+  other: {
+    "facebook-domain-verification": "qs6fg4yzfgg351p79qk5wvxqozg1q0",
+  },
 };
 
 const services = [
