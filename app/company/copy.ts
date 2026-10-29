@@ -2,6 +2,8 @@ import { company } from "@/lib/company";
 
 export type Lang = "fr" | "en";
 
+export const langUrl = (lang: Lang, path = "") => `${company.site}${lang === "fr" ? "" : "/en"}${path}`;
+
 const fr = {
   meta: {
     title: "IDITECHS · Services informatiques à Bamako",
@@ -103,6 +105,8 @@ const fr = {
     contact: "Contact",
     offers: "Offres du moment",
     portfolio: "Portfolio du fondateur",
+    privacy: "Politique de confidentialité",
+    terms: "Conditions générales",
     rights: "Tous droits réservés.",
   },
 };
@@ -208,6 +212,8 @@ const en: typeof fr = {
     contact: "Contact",
     offers: "Current offers",
     portfolio: "Founder's portfolio",
+    privacy: "Privacy policy",
+    terms: "Terms of service",
     rights: "All rights reserved.",
   },
 };

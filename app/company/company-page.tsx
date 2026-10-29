@@ -2,13 +2,21 @@ import type { Metadata } from "next";
 import Image from "next/image";
 import { company, legalLine, socials } from "@/lib/company";
 import { SocialLinks } from "@/components/social-links";
-import { copy, type Lang } from "./copy";
+import { copy, langUrl, type Lang } from "./copy";
 
 const MEDIA = "https://media.iditechs.com";
 const heroImage = `${MEDIA}/company/hero.jpg`;
 const ogImage = `${MEDIA}/company/og.png`;
 
-export const langUrl = (lang: Lang) => (lang === "fr" ? company.site : `${company.site}/en`);
+export const ICONS: NonNullable<Metadata["icons"]> = {
+  icon: [
+    { url: "/logos/iditechs-icon-32.png", sizes: "32x32", type: "image/png" },
+    { url: "/logos/iditechs-icon-48.png", sizes: "48x48", type: "image/png" },
+    { url: "/logos/iditechs-icon-512.png", sizes: "512x512", type: "image/png" },
+  ],
+  apple: [{ url: "/logos/iditechs-icon-180.png", sizes: "180x180", type: "image/png" }],
+  shortcut: "/logos/iditechs-icon-48.png",
+};
 
 export function buildMetadata(lang: Lang): Metadata {
   const t = copy[lang].meta;
@@ -40,15 +48,7 @@ export function buildMetadata(lang: Lang): Metadata {
       images: [ogImage],
     },
     robots: { index: true, follow: true },
-    icons: {
-      icon: [
-        { url: "/logos/iditechs-icon-32.png", sizes: "32x32", type: "image/png" },
-        { url: "/logos/iditechs-icon-48.png", sizes: "48x48", type: "image/png" },
-        { url: "/logos/iditechs-icon-512.png", sizes: "512x512", type: "image/png" },
-      ],
-      apple: [{ url: "/logos/iditechs-icon-180.png", sizes: "180x180", type: "image/png" }],
-      shortcut: "/logos/iditechs-icon-48.png",
-    },
+    icons: ICONS,
     other: {
       "facebook-domain-verification": "qs6fg4yzfgg351p79qk5wvxqozg1q0",
     },
@@ -103,10 +103,10 @@ function Eyebrow({ children }: { children: React.ReactNode }) {
   return <p className="mb-3 text-xs font-semibold uppercase tracking-[0.3em] text-cyan-400">{children}</p>;
 }
 
-function LangSwitch({ lang }: { lang: Lang }) {
+export function LangSwitch({ lang, path = "" }: { lang: Lang; path?: string }) {
   const item = (l: Lang, label: string) => (
     <a
-      href={langUrl(l)}
+      href={langUrl(l, path)}
       hrefLang={l}
       lang={l}
       aria-current={lang === l ? "page" : undefined}
@@ -320,6 +320,8 @@ export function CompanyPage({ lang }: { lang: Lang }) {
               <li><a href="#contact" className="hover:text-white">{t.nav.contact}</a></li>
               <li><a href="/links" className="hover:text-white">{t.footer.offers}</a></li>
               <li><a href={company.portfolio} target="_blank" rel="noopener noreferrer" className="hover:text-white">{t.footer.portfolio}</a></li>
+              <li><a href={langUrl(lang, "/privacy")} className="hover:text-white">{t.footer.privacy}</a></li>
+              <li><a href={langUrl(lang, "/terms")} className="hover:text-white">{t.footer.terms}</a></li>
             </ul>
           </div>
           <div>
