@@ -6,7 +6,7 @@ const fr = {
   meta: {
     title: "IDITECHS · Services informatiques à Bamako",
     description:
-      "Sites web, logiciels métier, installation informatique et formation pour les écoles, commerces, cliniques, restaurants et ONG de Bamako. Devis sous 48 h, acompte 50 %, reçu à chaque paiement.",
+      "Sites web, logiciels métier, installation informatique et formation pour les entreprises de Bamako. Devis écrit sous 48 h, reçu à chaque paiement.",
     ogDescription:
       "Sites web, logiciels métier, installation informatique et formation pour les entreprises de Bamako. Entreprise immatriculée au RCCM.",
     ogAlt: "IDITECHS · services informatiques à Bamako",
@@ -111,7 +111,7 @@ const en: typeof fr = {
   meta: {
     title: "IDITECHS · IT services in Bamako, Mali",
     description:
-      "Websites, business software, IT setup and training for schools, shops, clinics, restaurants and NGOs in Bamako. Quote within 48 h, 50% deposit, receipt for every payment.",
+      "Websites, business software, IT setup and training for businesses in Bamako, Mali. Written quote within 48 h, receipt for every payment.",
     ogDescription:
       "Websites, business software, IT setup and training for businesses in Bamako. Registered with the Bamako Trade Register.",
     ogAlt: "IDITECHS · IT services in Bamako",

@@ -55,24 +55,49 @@ export function buildMetadata(lang: Lang): Metadata {
   };
 }
 
-const jsonLd = {
-  "@context": "https://schema.org",
-  "@type": "ProfessionalService",
-  name: company.brand,
-  url: company.site,
-  logo: `${company.site}/logos/iditechs-icon-512.png`,
-  image: ogImage,
-  email: company.email,
-  telephone: company.phones[0],
-  founder: { "@type": "Person", name: company.owner, url: company.portfolio },
-  address: { "@type": "PostalAddress", addressLocality: "Bamako", addressRegion: "Commune V, Kalabancoura", addressCountry: "ML" },
-  areaServed: "Bamako, Mali",
-  identifier: [
-    { "@type": "PropertyValue", propertyID: "RCCM", value: company.rccm },
-    { "@type": "PropertyValue", propertyID: "DUNS", value: company.duns },
-  ],
-  sameAs: [company.portfolio, ...socials.map((s) => s.url)],
-};
+function buildJsonLd(lang: Lang) {
+  const t = copy[lang];
+  return {
+    "@context": "https://schema.org",
+    "@type": "ProfessionalService",
+    "@id": `${company.site}/#business`,
+    name: company.brand,
+    description: t.meta.description,
+    url: langUrl(lang),
+    inLanguage: lang,
+    knowsLanguage: ["fr", "en"],
+    logo: `${company.site}/logos/iditechs-icon-512.png`,
+    image: ogImage,
+    email: company.email,
+    telephone: company.phones[0],
+    contactPoint: [
+      {
+        "@type": "ContactPoint",
+        contactType: "customer service",
+        telephone: company.phones[0],
+        url: `https://wa.me/${company.whatsapp}`,
+        availableLanguage: ["French", "English"],
+        areaServed: "ML",
+      },
+    ],
+    founder: { "@type": "Person", name: company.owner, url: company.portfolio },
+    address: { "@type": "PostalAddress", addressLocality: "Bamako", addressRegion: "Commune V, Kalabancoura", addressCountry: "ML" },
+    areaServed: { "@type": "City", name: "Bamako" },
+    identifier: [
+      { "@type": "PropertyValue", propertyID: "RCCM", value: company.rccm },
+      { "@type": "PropertyValue", propertyID: "DUNS", value: company.duns },
+    ],
+    sameAs: [company.portfolio, ...socials.map((s) => s.url)],
+    hasOfferCatalog: {
+      "@type": "OfferCatalog",
+      name: t.services.title,
+      itemListElement: t.services.items.map((s) => ({
+        "@type": "Offer",
+        itemOffered: { "@type": "Service", name: s.title, description: s.desc, provider: { "@id": `${company.site}/#business` } },
+      })),
+    },
+  };
+}
 
 function Eyebrow({ children }: { children: React.ReactNode }) {
   return <p className="mb-3 text-xs font-semibold uppercase tracking-[0.3em] text-cyan-400">{children}</p>;
@@ -105,7 +130,9 @@ export function CompanyPage({ lang }: { lang: Lang }) {
 
   return (
     <main lang={lang} className="min-h-screen bg-[#030712] text-gray-100">
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
+      {/* The root layout is shared with the (English) portfolio and static, so <html lang> is fixed there. */}
+      <script dangerouslySetInnerHTML={{ __html: `document.documentElement.lang="${lang}"` }} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(buildJsonLd(lang)) }} />
 
       <header className="sticky top-0 z-20 border-b border-white/10 bg-[#030712]/90 backdrop-blur">
         <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-5 py-4">

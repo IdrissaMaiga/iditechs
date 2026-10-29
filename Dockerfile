@@ -20,5 +20,7 @@ COPY --from=build /app/.next/standalone ./
 COPY --from=build /app/.next/static ./.next/static
 COPY --from=build /app/public ./public
 COPY --from=build /app/prisma ./prisma
+# next/image writes optimized files here; the standalone output is root-owned.
+RUN mkdir -p .next/cache && chown -R node:node .next/cache
 USER node
 CMD ["node", "server.js"]
