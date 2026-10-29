@@ -4,9 +4,13 @@ import { getAllPosts } from "@/lib/blog";
 import { company, isCompanyHost } from "@/lib/company";
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  // iditechs.com serves a single page from this project, so it gets its own one-entry sitemap.
+  // iditechs.com serves the company page in French and English, so it gets its own sitemap.
   if (isCompanyHost(headers().get("host"))) {
-    return [{ url: company.site, lastModified: new Date(), changeFrequency: "monthly", priority: 1 }];
+    const languages = { fr: company.site, en: `${company.site}/en` };
+    return [
+      { url: company.site, lastModified: new Date(), changeFrequency: "monthly", priority: 1, alternates: { languages } },
+      { url: `${company.site}/en`, lastModified: new Date(), changeFrequency: "monthly", priority: 0.9, alternates: { languages } },
+    ];
   }
 
   const baseUrl = "https://idrissamaiga.iditechs.com";

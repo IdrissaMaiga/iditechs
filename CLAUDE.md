@@ -13,7 +13,7 @@ Next.js 14 portfolio with 3D (Three.js/R3F), AI chatbot (Gemini), S3-backed blog
 - **Vercel**: no longer used. Project, domains and token deleted on 2026-10-20
 
 ## Company site (iditechs.com)
-This project also serves the IDITECHS company site. `middleware.ts` host-guards `iditechs.com` / `www.iditechs.com`: `/` and `/company` render the company page, every other path 308-redirects to `/`. The matcher excludes `_next/`, `api/`, `favicon.ico`, `robots.txt`, `sitemap.xml` and `logos/`. `www` 308s to the apex. `idrissamaiga.iditechs.com` is unaffected: blog, mail and stats exist only there.
+This project also serves the IDITECHS company site. `middleware.ts` host-guards `iditechs.com` / `www.iditechs.com`: `/` and `/company` render the company page (French), `/en` and `/company/en` its English version (`?lang=en` 308s to `/en`), every other path 308-redirects to `/`. Page copy for both languages lives in `app/company/copy.ts`. The matcher excludes `_next/`, `api/`, `favicon.ico`, `robots.txt`, `sitemap.xml` and `logos/`. `www` 308s to the apex. `idrissamaiga.iditechs.com` is unaffected: blog, mail and stats exist only there.
 - **Page**: `app/company/page.tsx` (French landing page, OG metadata + JSON-LD)
 - **Identity**: `lib/company.ts` (brand, RCCM, NIF, address, phones, `isCompanyHost()`, `legalLine()` — the portfolio footer reads it too)
 - **Chrome separation**: every portfolio page lives in the `app/(portfolio)` route group, whose `layout.tsx` owns the navbar, chat button, `loading.tsx` and Person JSON-LD. `app/company` sits outside that group, so it cannot inherit them. Do not move that chrome back into `app/layout.tsx` and do not add a root-level `loading.tsx`/`error.tsx`

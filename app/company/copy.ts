@@ -2,10 +2,6 @@ import { company } from "@/lib/company";
 
 export type Lang = "fr" | "en";
 
-export function resolveLang(value: string | string[] | undefined): Lang {
-  return value === "en" ? "en" : "fr";
-}
-
 const fr = {
   meta: {
     title: "IDITECHS · Services informatiques à Bamako",
