@@ -2,10 +2,8 @@ import type { Metadata } from "next";
 import Image from "next/image";
 import { company } from "@/lib/company";
 
-export const metadata: Metadata = {
-  title: "Page introuvable · IDITECHS",
-  robots: { index: false, follow: false },
-};
+// Next already emits noindex for not-found pages.
+export const metadata: Metadata = { title: "Page introuvable · IDITECHS" };
 
 export default function NotFound() {
   return (

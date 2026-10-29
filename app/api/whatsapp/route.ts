@@ -11,6 +11,27 @@ function json(data: unknown, status = 200) {
   return NextResponse.json(data, { status });
 }
 
+type Probe = { instanceId: string; status: string; phoneNumber: string | null };
+
+// wa_connect_instance answers "connecting" even when the socket is already up, so liveness is
+// probed with a lookup that only succeeds on a connected instance. Returns null for "no change".
+async function probeStatus(mcp: Awaited<ReturnType<typeof getMcp>>, inst: Probe): Promise<string | null> {
+  if (inst.status === "disconnected" || inst.status === "gone") return null;
+  try {
+    if (inst.phoneNumber) {
+      await mcp.call("wa_check_number_exists", { instanceId: inst.instanceId, phoneNumber: inst.phoneNumber });
+      return "open";
+    }
+    const r = (await mcp.call("wa_connect_instance", { instanceId: inst.instanceId })) as Record<string, unknown>;
+    return (r.status as string) || null;
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : "";
+    if (msg.includes("not found")) return "gone";
+    if (/not initialized|not connected|closed/i.test(msg) && (inst.status === "open" || inst.status === "connected")) return "closed";
+    return null;
+  }
+}
+
 export async function GET(req: NextRequest) {
   const { searchParams } = req.nextUrl;
   const tag = searchParams.get("tag");
@@ -41,19 +62,10 @@ export async function GET(req: NextRequest) {
     const mcp = await getMcp();
     await Promise.all(
       instances.map(async (inst) => {
-        try {
-          const r = (await mcp.call("wa_connect_instance", { instanceId: inst.instanceId })) as Record<string, unknown>;
-          const live = (r.status as string) || "connecting";
-          if (live !== inst.status) {
-            await db.waInstance.update({ where: { id: inst.id }, data: { status: live } });
-            inst.status = live;
-          }
-        } catch (e) {
-          const msg = e instanceof Error ? e.message : "";
-          if (msg.includes("not found")) {
-            await db.waInstance.update({ where: { id: inst.id }, data: { status: "gone" } });
-            inst.status = "gone";
-          }
+        const live = await probeStatus(mcp, inst);
+        if (live && live !== inst.status) {
+          await db.waInstance.update({ where: { id: inst.id }, data: { status: live } });
+          inst.status = live;
         }
       })
     );
@@ -115,7 +127,10 @@ export async function POST(req: NextRequest) {
       const { id } = body as { id: string };
       const inst = await db.waInstance.findUnique({ where: { id } });
       if (!inst) return json({ ok: false, error: "not found" }, 404);
-      const result = await mcp.call("wa_delete_instance", { instanceId: inst.instanceId });
+      const result = await mcp.call("wa_delete_instance", { instanceId: inst.instanceId }).catch((e: unknown) => {
+        if (e instanceof Error && e.message.includes("not found")) return { alreadyGone: true };
+        throw e;
+      });
       await db.waInstance.delete({ where: { id } });
       return json({ ok: true, result });
     }
@@ -171,12 +186,11 @@ export async function POST(req: NextRequest) {
       const { id } = body as { id: string };
       const inst = await db.waInstance.findUnique({ where: { id } });
       if (!inst) return json({ ok: false, error: "not found" }, 404);
-      const result = (await mcp.call("wa_connect_instance", { instanceId: inst.instanceId })) as Record<string, unknown>;
-      const status = (result.status as string) || inst.status;
+      const status = (await probeStatus(mcp, inst)) ?? inst.status;
       if (status !== inst.status) {
         await db.waInstance.update({ where: { id }, data: { status } });
       }
-      return json({ ok: true, status, raw: result });
+      return json({ ok: true, status });
     }
 
     return json({ ok: false, error: "unknown action" }, 400);

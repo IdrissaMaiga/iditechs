@@ -23,7 +23,8 @@ export default async function LinksPage() {
     .catch(() => []);
 
   return (
-    <main className="min-h-screen bg-[#0a0e17] text-[#eef1f7] px-5 py-12">
+    <main lang="fr" className="min-h-screen bg-[#0a0e17] text-[#eef1f7] px-5 py-12">
+      <script dangerouslySetInnerHTML={{ __html: 'document.documentElement.lang="fr"' }} />
       <div className="mx-auto max-w-md flex flex-col items-center gap-6">
         <div className="flex flex-col items-center text-center">
           <Image src="/logos/iditechs-icon-180.png" alt={company.brand} width={88} height={88} unoptimized className="rounded-full ring-2 ring-[#4da6ff]/40" />
