@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { db } from "@/lib/db";
 import { company } from "@/lib/company";
+import { SocialLinks } from "@/components/social-links";
 
 export const dynamic = "force-dynamic";
 
@@ -44,6 +45,7 @@ export default async function LinksPage() {
             Nous écrire sur WhatsApp
           </a>
         </nav>
+        <SocialLinks size={15} className="justify-center" />
         <p className="text-xs text-[#6a7284]">{company.email}</p>
       </div>
     </main>

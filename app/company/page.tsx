@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Image from "next/image";
-import { company, legalLine } from "@/lib/company";
+import { company, legalLine, socials } from "@/lib/company";
+import { SocialLinks } from "@/components/social-links";
 
 const MEDIA = "https://media.iditechs.com";
 const heroImage = `${MEDIA}/company/hero.jpg`;
@@ -37,6 +38,7 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
+    site: "@Iditechs",
     title: "IDITECHS · Services informatiques à Bamako",
     images: [ogImage],
   },
@@ -63,6 +65,22 @@ const steps = [
   ["5", "Garantie 30 jours", "Corrections gratuites pendant 30 jours, puis maintenance si vous le souhaitez."],
 ];
 
+const trust = [
+  ["RCCM", company.rccm, "Entreprise immatriculée à Bamako"],
+  ["D-U-N-S", company.duns, "Identifiant international Dun & Bradstreet"],
+  ["48 h", "Devis écrit", "Prix, délai et contenu, valable 30 jours"],
+  ["30 jours", "Garantie", "Corrections gratuites après livraison"],
+];
+
+const audiences = [
+  "Écoles et centres de formation",
+  "Pharmacies et cliniques",
+  "Restaurants et livraison",
+  "Boutiques et vendeurs en ligne",
+  "ONG et associations",
+  "Salons et prestataires sur rendez-vous",
+];
+
 const wa = `https://wa.me/${company.whatsapp}?text=${encodeURIComponent("Bonjour IDITECHS, je souhaite un devis pour ")}`;
 
 const jsonLd = {
@@ -70,14 +88,22 @@ const jsonLd = {
   "@type": "ProfessionalService",
   name: company.brand,
   url: company.site,
+  logo: `${MEDIA}/company/og.png`,
   email: company.email,
   telephone: company.phones[0],
   founder: { "@type": "Person", name: company.owner, url: company.portfolio },
   address: { "@type": "PostalAddress", addressLocality: "Bamako", addressRegion: "Commune V, Kalabancoura", addressCountry: "ML" },
   areaServed: "Bamako, Mali",
-  identifier: [{ "@type": "PropertyValue", propertyID: "RCCM", value: company.rccm }],
-  sameAs: [company.portfolio],
+  identifier: [
+    { "@type": "PropertyValue", propertyID: "RCCM", value: company.rccm },
+    { "@type": "PropertyValue", propertyID: "DUNS", value: company.duns },
+  ],
+  sameAs: [company.portfolio, ...socials.map((s) => s.url)],
 };
+
+function Eyebrow({ children }: { children: React.ReactNode }) {
+  return <p className="mb-3 text-xs font-semibold uppercase tracking-[0.3em] text-cyan-400">{children}</p>;
+}
 
 export default function CompanyPage() {
   return (
@@ -113,7 +139,7 @@ export default function CompanyPage() {
         <div className="pointer-events-none absolute inset-0 bg-[#030712]/55 sm:hidden" />
         <div className="pointer-events-none absolute inset-x-0 bottom-0 h-28 bg-gradient-to-b from-transparent to-[#030712]" />
         <div className="relative mx-auto max-w-6xl px-5 pb-20 pt-24 sm:pt-32">
-          <p className="mb-4 text-xs font-semibold uppercase tracking-[0.3em] text-cyan-400">Services informatiques · Bamako</p>
+          <Eyebrow>Services informatiques · Bamako</Eyebrow>
           <h1 className="font-display max-w-3xl text-4xl font-bold leading-tight text-white sm:text-6xl">
             Votre entreprise, visible et organisée.
           </h1>
@@ -129,18 +155,35 @@ export default function CompanyPage() {
               {company.email}
             </a>
           </div>
-          <p className="mt-6 text-sm text-gray-500">Entreprise immatriculée au RCCM de Bamako · {company.rccm}</p>
+          <div className="mt-8 flex flex-wrap items-center gap-4 text-sm text-gray-400">
+            <span>Suivez-nous</span>
+            <SocialLinks size={14} />
+          </div>
         </div>
       </section>
 
-      <section id="services" className="border-t border-white/10">
+      <section aria-label="Garanties" className="border-y border-white/10 bg-white/[0.02]">
+        <div className="mx-auto grid max-w-6xl gap-px px-5 py-8 sm:grid-cols-2 lg:grid-cols-4">
+          {trust.map(([k, v, d]) => (
+            <div key={k} className="px-4 py-3">
+              <p className="font-display text-2xl font-bold text-white">{k}</p>
+              <p className="mt-1 text-sm font-medium text-cyan-400">{v}</p>
+              <p className="mt-1 text-xs text-gray-500">{d}</p>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      <section id="services">
         <div className="mx-auto max-w-6xl px-5 py-20">
+          <Eyebrow>Services</Eyebrow>
           <h2 className="font-display text-3xl font-bold text-white">Ce que nous faisons</h2>
           <p className="mt-3 max-w-2xl text-gray-400">Pas d'inventaire, pas de surprise : chaque prestation démarre par un devis écrit et un acompte, et se termine par une livraison, une formation et un reçu.</p>
           <div className="mt-10 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-            {services.map((s) => (
-              <div key={s.title} className="rounded-2xl border border-white/10 bg-white/[0.03] p-6 transition hover:border-cyan-500/40">
-                <h3 className="text-lg font-semibold text-white">{s.title}</h3>
+            {services.map((s, i) => (
+              <div key={s.title} className="group rounded-2xl border border-white/10 bg-white/[0.03] p-6 transition hover:-translate-y-0.5 hover:border-cyan-500/40 hover:bg-white/[0.05]">
+                <p className="font-display text-xs font-semibold text-gray-500">0{i + 1}</p>
+                <h3 className="mt-2 text-lg font-semibold text-white">{s.title}</h3>
                 <p className="mt-2 text-sm text-gray-300">{s.desc}</p>
                 <p className="mt-4 text-xs font-medium uppercase tracking-wider text-cyan-400">{s.meta}</p>
               </div>
@@ -151,10 +194,12 @@ export default function CompanyPage() {
 
       <section id="process" className="border-t border-white/10 bg-white/[0.02]">
         <div className="mx-auto max-w-6xl px-5 py-20">
+          <Eyebrow>Méthode</Eyebrow>
           <h2 className="font-display text-3xl font-bold text-white">Comment ça marche</h2>
+          <p className="mt-3 max-w-2xl text-gray-400">Cinq étapes, toujours les mêmes, du premier message à la garantie.</p>
           <ol className="mt-10 grid gap-6 md:grid-cols-5">
             {steps.map(([n, t, d]) => (
-              <li key={n} className="relative rounded-2xl border border-white/10 p-5">
+              <li key={n} className="relative rounded-2xl border border-white/10 bg-[#030712] p-5">
                 <span className="font-display text-3xl font-bold text-cyan-400">{n}</span>
                 <h3 className="mt-2 font-semibold text-white">{t}</h3>
                 <p className="mt-2 text-sm text-gray-300">{d}</p>
@@ -167,6 +212,7 @@ export default function CompanyPage() {
       <section id="about" className="border-t border-white/10">
         <div className="mx-auto grid max-w-6xl gap-10 px-5 py-20 md:grid-cols-2">
           <div>
+            <Eyebrow>À propos</Eyebrow>
             <h2 className="font-display text-3xl font-bold text-white">Pourquoi IDITECHS</h2>
             <ul className="mt-6 space-y-4 text-gray-300">
               <li><strong className="text-white">Une entreprise enregistrée.</strong> IDITECHS est immatriculée au Registre du Commerce de Bamako ({company.rccm}). Vous recevez un devis, une facture et un reçu pour chaque paiement.</li>
@@ -180,8 +226,12 @@ export default function CompanyPage() {
           </div>
           <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-6">
             <h3 className="font-semibold text-white">Pour qui</h3>
-            <p className="mt-2 text-sm text-gray-300">Écoles et centres de formation, pharmacies et cliniques, restaurants et services de livraison, boutiques et vendeurs en ligne, ONG et associations, salons et prestataires sur rendez-vous.</p>
-            <h3 className="mt-6 font-semibold text-white">In English</h3>
+            <ul className="mt-3 flex flex-wrap gap-2">
+              {audiences.map((a) => (
+                <li key={a} className="rounded-full border border-white/10 bg-white/[0.03] px-3 py-1 text-xs text-gray-200">{a}</li>
+              ))}
+            </ul>
+            <h3 className="mt-8 font-semibold text-white">In English</h3>
             <p className="mt-2 text-sm text-gray-300">IDITECHS is a registered IT services business in Bamako, Mali: websites, small business software, office IT setup and training, delivered on a fixed date with a written quote, a deposit and a receipt for every payment. We work with NGOs and companies abroad remotely.</p>
           </div>
         </div>
@@ -189,33 +239,75 @@ export default function CompanyPage() {
 
       <section id="contact" className="border-t border-white/10 bg-white/[0.02]">
         <div className="mx-auto max-w-6xl px-5 py-20">
-          <h2 className="font-display text-3xl font-bold text-white">Contact</h2>
+          <Eyebrow>Contact</Eyebrow>
+          <h2 className="font-display text-3xl font-bold text-white">Parlons de votre projet</h2>
+          <p className="mt-3 max-w-2xl text-gray-400">Réponse sous 24 h ouvrées. Le plus rapide reste WhatsApp.</p>
           <div className="mt-8 grid gap-6 sm:grid-cols-3">
-            <div className="rounded-2xl border border-white/10 p-6">
+            <div className="rounded-2xl border border-white/10 bg-[#030712] p-6">
               <p className="text-xs uppercase tracking-wider text-gray-500">WhatsApp / Téléphone</p>
               {company.phones.map((p) => (
-                <p key={p} className="mt-2 text-lg text-white">{p}</p>
+                <a key={p} href={`tel:${p.replace(/\s/g, "")}`} className="mt-2 block text-lg text-white hover:text-cyan-300">{p}</a>
               ))}
             </div>
-            <div className="rounded-2xl border border-white/10 p-6">
+            <div className="rounded-2xl border border-white/10 bg-[#030712] p-6">
               <p className="text-xs uppercase tracking-wider text-gray-500">Email</p>
               <a href={`mailto:${company.email}`} className="mt-2 block text-lg text-white hover:text-cyan-300">{company.email}</a>
             </div>
-            <div className="rounded-2xl border border-white/10 p-6">
+            <div className="rounded-2xl border border-white/10 bg-[#030712] p-6">
               <p className="text-xs uppercase tracking-wider text-gray-500">Adresse</p>
               <p className="mt-2 text-lg text-white">{company.address}</p>
             </div>
           </div>
-          <a href={wa} target="_blank" rel="noopener noreferrer" className="mt-8 inline-block rounded-full bg-cyan-500 px-6 py-3 font-semibold text-black hover:bg-cyan-400">
-            Écrire sur WhatsApp
-          </a>
+          <div className="mt-8 flex flex-wrap items-center gap-3">
+            <a href={wa} target="_blank" rel="noopener noreferrer" className="rounded-full bg-cyan-500 px-6 py-3 font-semibold text-black hover:bg-cyan-400">
+              Écrire sur WhatsApp
+            </a>
+            <SocialLinks variant="pills" size={14} />
+          </div>
         </div>
       </section>
 
       <footer className="border-t border-white/10">
-        <div className="mx-auto max-w-6xl px-5 py-8 text-center text-xs text-gray-500">
-          <p>{legalLine("fr")}</p>
-          <p className="mt-2">© 2026 {company.brand}. Tous droits réservés.</p>
+        <div className="mx-auto grid max-w-6xl gap-10 px-5 py-14 md:grid-cols-4">
+          <div className="md:col-span-1">
+            <p className="font-display text-lg font-bold tracking-[0.2em] text-white">IDITECHS</p>
+            <p className="mt-3 text-sm text-gray-400">Services informatiques à Bamako. Sites web, logiciels métier, installation et formation.</p>
+            <SocialLinks size={14} className="mt-5" />
+          </div>
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-wider text-gray-500">Services</p>
+            <ul className="mt-4 space-y-2 text-sm text-gray-300">
+              {services.map((s) => (
+                <li key={s.title}><a href="#services" className="hover:text-white">{s.title}</a></li>
+              ))}
+            </ul>
+          </div>
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-wider text-gray-500">Entreprise</p>
+            <ul className="mt-4 space-y-2 text-sm text-gray-300">
+              <li><a href="#process" className="hover:text-white">Comment ça marche</a></li>
+              <li><a href="#about" className="hover:text-white">À propos</a></li>
+              <li><a href="#contact" className="hover:text-white">Contact</a></li>
+              <li><a href="/links" className="hover:text-white">Offres du moment</a></li>
+              <li><a href={company.portfolio} target="_blank" rel="noopener noreferrer" className="hover:text-white">Portfolio du fondateur</a></li>
+            </ul>
+          </div>
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-wider text-gray-500">Contact</p>
+            <ul className="mt-4 space-y-2 text-sm text-gray-300">
+              {company.phones.map((p) => (
+                <li key={p}><a href={`tel:${p.replace(/\s/g, "")}`} className="hover:text-white">{p}</a></li>
+              ))}
+              <li><a href={`mailto:${company.email}`} className="hover:text-white">{company.email}</a></li>
+              <li className="text-gray-400">{company.address}</li>
+            </ul>
+          </div>
+        </div>
+        <div className="border-t border-white/10">
+          <div className="mx-auto flex max-w-6xl flex-col gap-2 px-5 py-6 text-xs text-gray-500 sm:flex-row sm:items-center sm:justify-between">
+            <p>{legalLine("fr")}</p>
+            <p>© 2026 {company.brand}. Tous droits réservés.</p>
+          </div>
         </div>
       </footer>
     </main>

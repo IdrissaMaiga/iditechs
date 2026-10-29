@@ -6,6 +6,7 @@ export const company = {
   owner: "Idrissa Maiga",
   rccm: "ML-BKO-01-2026-A-05533",
   nif: "085146824W" as string | null,
+  duns: "850426492",
   address: "Kalabancoura, Commune V, Bamako, Mali",
   phones: ["+223 77 37 47 82", "+223 84 02 71 37"],
   whatsapp: "22377374782",
@@ -13,6 +14,17 @@ export const company = {
   site: "https://iditechs.com",
   portfolio: "https://idrissamaiga.iditechs.com",
 };
+
+export const socials = [
+  { name: "Instagram", handle: "@iditechs", url: "https://www.instagram.com/iditechs/" },
+  { name: "TikTok", handle: "@iditechs", url: "https://www.tiktok.com/@iditechs" },
+  { name: "X", handle: "@Iditechs", url: "https://x.com/Iditechs" },
+  { name: "YouTube", handle: "@Iditechs", url: "https://www.youtube.com/@Iditechs" },
+  { name: "Facebook", handle: "IDiTechs", url: "https://www.facebook.com/Iditechs" },
+  { name: "LinkedIn", handle: "IDiTechs", url: "https://www.linkedin.com/company/126673993" },
+] as const;
+
+export type SocialName = (typeof socials)[number]["name"];
 
 const companyHosts = new Set(["iditechs.com", "www.iditechs.com"]);
 
