@@ -30,6 +30,8 @@ export const metadata: Metadata = {
   title: "Idrissa Maiga | Full-Stack Engineer",
   description:
     "Full-Stack Engineer building scalable applications with Java, TypeScript, and AI. Based in Budapest.",
+  // Portfolio favicon by default; app/company overrides `icons` with the IDITECHS logo.
+  icons: { icon: "/favicon.ico" },
 };
 
 export const viewport: Viewport = {
@@ -49,9 +51,6 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" suppressHydrationWarning className="scroll-smooth dark">
-      <head>
-        <link rel="icon" href="/favicon.ico" />
-      </head>
       <body className={`${inter.variable} ${spaceGrotesk.variable} font-sans antialiased`}>
         <SessionProvider>
           <ThemeProvider attribute="class" defaultTheme="dark" enableSystem={false}>

@@ -43,6 +43,15 @@ export const metadata: Metadata = {
     images: [ogImage],
   },
   robots: { index: true, follow: true },
+  icons: {
+    icon: [
+      { url: "/logos/iditechs-icon-32.png", sizes: "32x32", type: "image/png" },
+      { url: "/logos/iditechs-icon-48.png", sizes: "48x48", type: "image/png" },
+      { url: "/logos/iditechs-icon-512.png", sizes: "512x512", type: "image/png" },
+    ],
+    apple: [{ url: "/logos/iditechs-icon-180.png", sizes: "180x180", type: "image/png" }],
+    shortcut: "/logos/iditechs-icon-48.png",
+  },
   other: {
     "facebook-domain-verification": "qs6fg4yzfgg351p79qk5wvxqozg1q0",
   },
@@ -88,7 +97,8 @@ const jsonLd = {
   "@type": "ProfessionalService",
   name: company.brand,
   url: company.site,
-  logo: `${MEDIA}/company/og.png`,
+  logo: `${company.site}/logos/iditechs-icon-512.png`,
+  image: ogImage,
   email: company.email,
   telephone: company.phones[0],
   founder: { "@type": "Person", name: company.owner, url: company.portfolio },
@@ -112,7 +122,10 @@ export default function CompanyPage() {
 
       <header className="sticky top-0 z-20 border-b border-white/10 bg-[#030712]/90 backdrop-blur">
         <div className="mx-auto flex max-w-6xl items-center justify-between px-5 py-4">
-          <a href="#top" className="font-display text-xl font-bold tracking-[0.2em] text-white">IDITECHS</a>
+          <a href="#top" className="flex items-center gap-3">
+            <Image src="/logos/iditechs-icon-180.png" alt="" width={36} height={36} unoptimized className="rounded-full ring-1 ring-cyan-500/40" />
+            <span className="font-display text-xl font-bold tracking-[0.2em] text-white">IDITECHS</span>
+          </a>
           <nav className="hidden gap-6 text-sm text-gray-300 sm:flex">
             <a href="#services" className="hover:text-white">Services</a>
             <a href="#process" className="hover:text-white">Comment ça marche</a>
@@ -270,7 +283,10 @@ export default function CompanyPage() {
       <footer className="border-t border-white/10">
         <div className="mx-auto grid max-w-6xl gap-10 px-5 py-14 md:grid-cols-4">
           <div className="md:col-span-1">
-            <p className="font-display text-lg font-bold tracking-[0.2em] text-white">IDITECHS</p>
+            <div className="flex items-center gap-3">
+              <Image src="/logos/iditechs-icon-180.png" alt="" width={40} height={40} unoptimized className="rounded-full ring-1 ring-cyan-500/40" />
+              <p className="font-display text-lg font-bold tracking-[0.2em] text-white">IDITECHS</p>
+            </div>
             <p className="mt-3 text-sm text-gray-400">Services informatiques à Bamako. Sites web, logiciels métier, installation et formation.</p>
             <SocialLinks size={14} className="mt-5" />
           </div>

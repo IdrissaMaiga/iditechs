@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Image from "next/image";
 import { db } from "@/lib/db";
 import { company } from "@/lib/company";
 import { SocialLinks } from "@/components/social-links";
@@ -10,6 +11,10 @@ export const metadata: Metadata = {
   description: "Sites web, applications mobiles, logiciels métier et IA à Bamako. Toutes nos offres du moment.",
   alternates: { canonical: `${company.site}/links` },
   robots: { index: false, follow: true },
+  icons: {
+    icon: [{ url: "/logos/iditechs-icon-48.png", sizes: "48x48", type: "image/png" }],
+    apple: [{ url: "/logos/iditechs-icon-180.png", sizes: "180x180", type: "image/png" }],
+  },
 };
 
 export default async function LinksPage() {
@@ -20,8 +25,9 @@ export default async function LinksPage() {
   return (
     <main className="min-h-screen bg-[#0a0e17] text-[#eef1f7] px-5 py-12">
       <div className="mx-auto max-w-md flex flex-col items-center gap-6">
-        <div className="text-center">
-          <h1 className="text-3xl font-bold tracking-tight">{company.brand}</h1>
+        <div className="flex flex-col items-center text-center">
+          <Image src="/logos/iditechs-icon-180.png" alt={company.brand} width={88} height={88} unoptimized className="rounded-full ring-2 ring-[#4da6ff]/40" />
+          <h1 className="mt-4 text-3xl font-bold tracking-tight">{company.brand}</h1>
           <p className="mt-2 text-sm text-[#9aa3b5]">Sites web · Applications mobiles · Logiciels métier · IA</p>
           <p className="text-xs text-[#6a7284]">Bamako, Mali</p>
         </div>
