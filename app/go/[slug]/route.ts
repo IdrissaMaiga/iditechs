@@ -22,7 +22,11 @@ export async function GET(req: NextRequest, { params }: { params: { slug: string
   const channel = detectSource(req.nextUrl.searchParams.get("c"), ua, referer);
   const dest = resolveDestination(campaign, device, channel);
 
-  if (!isBot(ua)) {
+  // HEAD (link checkers) and speculative prefetches are not taps, so they are not counted
+  const purpose = `${req.headers.get("sec-purpose") ?? ""} ${req.headers.get("purpose") ?? ""} ${req.headers.get("x-moz") ?? ""}`;
+  const isTap = req.method === "GET" && !/prefetch|prerender/i.test(purpose);
+
+  if (isTap && !isBot(ua)) {
     const ip = (req.headers.get("x-forwarded-for") || "").split(",")[0].trim();
     const ipHash = ip ? createHash("sha256").update(`${process.env.NEXTAUTH_SECRET || ""}:${ip}`).digest("hex") : null;
     await db.campaignClick
