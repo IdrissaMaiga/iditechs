@@ -20,6 +20,7 @@
     "framer-motion": "^12.4.2",
     "gray-matter": "^4.0.3",
     "lucide-react": "^0.447.0",
+    "maxmind": "^4.3.29",
     "next": "14.2.14",
     "next-auth": "^4.24.14",
     "next-mdx-remote": "^6.0.0",

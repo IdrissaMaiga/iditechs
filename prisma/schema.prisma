@@ -123,10 +123,7 @@ model Campaign {
   id             String          @id @default(cuid())
   slug           String          @unique
   title          String
-  body           String
-  mediaUrl       String?         @map("media_url")
-  mediaType      String          @default("none") @map("media_type")
-  channels       String[]        @default([])
+  body           String?
   goal           String          @default("web")
   webUrl         String?         @map("web_url")
   iosUrl         String?         @map("ios_url")
@@ -134,20 +131,13 @@ model Campaign {
   whatsappNumber String?         @map("whatsapp_number")
   whatsappText   String?         @map("whatsapp_text")
   formUrl        String?         @map("form_url")
-  utmSource      String          @default("meta") @map("utm_source")
   utmMedium      String          @default("social") @map("utm_medium")
   utmCampaign    String?         @map("utm_campaign")
-  status         String          @default("draft")
-  scheduledAt    DateTime?       @map("scheduled_at")
-  publishedAt    DateTime?       @map("published_at")
-  fbPostId       String?         @map("fb_post_id")
-  igMediaId      String?         @map("ig_media_id")
-  lastError      String?         @map("last_error")
+  listed         Boolean         @default(false)
   clicks         CampaignClick[]
   createdAt      DateTime        @default(now()) @map("created_at")
   updatedAt      DateTime        @updatedAt @map("updated_at")
 
-  @@index([status])
   @@map("campaigns")
 }
 

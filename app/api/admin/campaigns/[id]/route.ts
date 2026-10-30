@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { Prisma } from "@prisma/client";
 import { db } from "@/lib/db";
 import { isAdmin } from "@/lib/admin-auth";
-import { parseCampaignInput, smartLink } from "@/lib/campaigns";
+import { parseCampaignInput, platformLinks, smartLink } from "@/lib/campaigns";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -14,7 +14,7 @@ export async function GET(req: NextRequest, { params }: Ctx) {
   const c = await db.campaign.findUnique({ where: { id: params.id }, include: { _count: { select: { clicks: true } } } });
   if (!c) return NextResponse.json({ error: "not found" }, { status: 404 });
   const { _count, ...rest } = c;
-  return NextResponse.json({ campaign: { ...rest, clicks: _count.clicks, link: smartLink(c.slug) } });
+  return NextResponse.json({ campaign: { ...rest, clicks: _count.clicks, link: smartLink(c.slug), links: platformLinks(c.slug) } });
 }
 
 export async function PATCH(req: NextRequest, { params }: Ctx) {

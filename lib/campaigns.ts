@@ -1,9 +1,10 @@
 import type { Campaign } from "@prisma/client";
 
+// A campaign is one tracked link: the same post goes out by hand on any of our socials, each
+// copy carries /go/<slug>?c=<platform>, and every click is logged before the redirect.
+// No social media API is called from here.
 export const GOALS = ["web", "app", "whatsapp", "form"] as const;
-export const CHANNELS = ["facebook", "instagram"] as const;
-export const MEDIA_TYPES = ["none", "image", "video"] as const;
-export const STATUSES = ["draft", "scheduled", "published", "failed"] as const;
+export const PLATFORMS = ["instagram", "facebook", "tiktok", "x", "youtube", "linkedin", "whatsapp"] as const;
 export type Device = "ios" | "android" | "desktop" | "other";
 
 export function isHttpUrl(v: unknown): v is string {
@@ -33,9 +34,60 @@ export function smartLink(slug: string, channel?: string): string {
   return `${siteOrigin()}/go/${slug}${channel ? `?c=${encodeURIComponent(channel)}` : ""}`;
 }
 
+/** One ready-to-paste link per platform, so each copy of the post reports where the click came from. */
+export function platformLinks(slug: string): Record<string, string> {
+  return Object.fromEntries(PLATFORMS.map((p) => [p, smartLink(slug, p)]));
+}
+
+const IN_APP: [RegExp, string][] = [
+  [/instagram/i, "instagram"],
+  [/FBAN|FBAV|FB_IAB|FBIOS/, "facebook"],
+  [/musical_ly|BytedanceWebview|TikTok/i, "tiktok"],
+  [/LinkedInApp/i, "linkedin"],
+  [/Twitter/i, "x"],
+];
+
+// Pasting a link into a post makes each platform fetch it once for the preview card; those
+// fetches still get redirected but must not be counted as clicks.
+const BOTS = /facebookexternalhit|facebookcatalog|meta-externalagent|Facebot|Twitterbot|LinkedInBot|WhatsApp\/|TelegramBot|Slackbot|Discordbot|Pinterestbot|Applebot|Googlebot|bingbot|YandexBot|Bytespider|TikTokSpider|SkypeUriPreview|Embedly|HeadlessChrome|curl\/|wget|python-requests|Go-http-client|axios|node-fetch|\b(bot|crawler|spider)\b/i;
+
+export function isBot(ua: string | null): boolean {
+  return !ua || BOTS.test(ua);
+}
+
+const REFERER_HOSTS: [RegExp, string][] = [
+  [/(^|\.)instagram\.com$/, "instagram"],
+  [/(^|\.)(facebook\.com|fb\.com|fb\.me|messenger\.com)$/, "facebook"],
+  [/(^|\.)tiktok\.com$/, "tiktok"],
+  [/(^|\.)(x\.com|twitter\.com|t\.co)$/, "x"],
+  [/(^|\.)(youtube\.com|youtu\.be)$/, "youtube"],
+  [/(^|\.)(linkedin\.com|lnkd\.in)$/, "linkedin"],
+  [/(^|\.)(whatsapp\.com|wa\.me)$/, "whatsapp"],
+];
+
+export function refererHost(referer: string | null): string | null {
+  try {
+    return referer ? new URL(referer).hostname.toLowerCase() : null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Where a click came from: the ?c= tag on the link wins, then the in-app browser named in the
+ * user agent, then the referer host. Null means direct (typed, copied, or the source hid itself).
+ */
+export function detectSource(tag: string | null, ua: string | null, referer: string | null): string | null {
+  if (tag && /^[a-z0-9_-]{1,32}$/i.test(tag)) return tag.toLowerCase();
+  for (const [re, name] of IN_APP) if (re.test(ua ?? "")) return name;
+  const host = refererHost(referer);
+  if (host) for (const [re, name] of REFERER_HOSTS) if (re.test(host)) return name;
+  return null;
+}
+
 function withUtm(url: string, c: Campaign, channel: string | null): string {
   const u = new URL(url);
-  if (!u.searchParams.has("utm_source")) u.searchParams.set("utm_source", channel || c.utmSource);
+  if (!u.searchParams.has("utm_source")) u.searchParams.set("utm_source", channel || "direct");
   if (!u.searchParams.has("utm_medium")) u.searchParams.set("utm_medium", c.utmMedium);
   if (!u.searchParams.has("utm_campaign")) u.searchParams.set("utm_campaign", c.utmCampaign || c.slug);
   if (channel && !u.searchParams.has("utm_content")) u.searchParams.set("utm_content", channel);
@@ -63,8 +115,8 @@ export function resolveDestination(c: Campaign, device: Device, channel: string 
 }
 
 type Input = Record<string, unknown>;
-const URL_FIELDS = ["webUrl", "iosUrl", "androidUrl", "formUrl", "mediaUrl"] as const;
-const STR_FIELDS = ["title", "body", "whatsappText", "utmSource", "utmMedium", "utmCampaign"] as const;
+const URL_FIELDS = ["webUrl", "iosUrl", "androidUrl", "formUrl"] as const;
+const STR_FIELDS = ["title", "body", "whatsappText", "utmMedium", "utmCampaign"] as const;
 
 /** Validates create/patch input; returns the clean data or an error message. */
 export function parseCampaignInput(raw: Input, partial: boolean): { data: Record<string, unknown> } | { error: string } {
@@ -73,8 +125,8 @@ export function parseCampaignInput(raw: Input, partial: boolean): { data: Record
     if (typeof raw.slug !== "string" || !/^[a-z0-9](?:[a-z0-9-]{0,78}[a-z0-9])?$/.test(raw.slug)) return { error: "slug must be lowercase letters, digits and dashes" };
     d.slug = raw.slug;
   }
-  if (!partial && (typeof raw.title !== "string" || !raw.title.trim())) return { error: "title required" };
-  if (!partial && typeof raw.body !== "string") return { error: "body required" };
+  if ((raw.title !== undefined || !partial) && (typeof raw.title !== "string" || !raw.title.trim())) return { error: "title required" };
+  if (raw.utmMedium !== undefined && (typeof raw.utmMedium !== "string" || !raw.utmMedium.trim())) return { error: "utmMedium must be a non-empty string" };
   for (const f of STR_FIELDS) {
     if (raw[f] === undefined) continue;
     if (raw[f] !== null && typeof raw[f] !== "string") return { error: `${f} must be a string` };
@@ -95,25 +147,9 @@ export function parseCampaignInput(raw: Input, partial: boolean): { data: Record
     if (!GOALS.includes(raw.goal as never)) return { error: `goal must be one of ${GOALS.join(", ")}` };
     d.goal = raw.goal;
   }
-  if (raw.mediaType !== undefined) {
-    if (!MEDIA_TYPES.includes(raw.mediaType as never)) return { error: `mediaType must be one of ${MEDIA_TYPES.join(", ")}` };
-    d.mediaType = raw.mediaType;
-  }
-  if (raw.status !== undefined) {
-    if (!STATUSES.includes(raw.status as never)) return { error: `status must be one of ${STATUSES.join(", ")}` };
-    d.status = raw.status;
-  }
-  if (raw.channels !== undefined) {
-    if (!Array.isArray(raw.channels) || raw.channels.some((c) => !CHANNELS.includes(c as never))) return { error: `channels must be a subset of ${CHANNELS.join(", ")}` };
-    d.channels = Array.from(new Set(raw.channels as string[]));
-  }
-  if (raw.scheduledAt !== undefined) {
-    if (raw.scheduledAt === null) d.scheduledAt = null;
-    else {
-      const t = new Date(String(raw.scheduledAt));
-      if (isNaN(t.getTime())) return { error: "scheduledAt must be an ISO date" };
-      d.scheduledAt = t;
-    }
+  if (raw.listed !== undefined) {
+    if (typeof raw.listed !== "boolean") return { error: "listed must be true or false" };
+    d.listed = raw.listed;
   }
   return { data: d };
 }

@@ -1,8 +1,10 @@
 import type { Metadata } from "next";
 import Image from "next/image";
+import { headers } from "next/headers";
 import { db } from "@/lib/db";
 import { company } from "@/lib/company";
 import { SocialLinks } from "@/components/social-links";
+import { detectSource } from "@/lib/campaigns";
 
 export const dynamic = "force-dynamic";
 
@@ -17,9 +19,14 @@ export const metadata: Metadata = {
   },
 };
 
-export default async function LinksPage() {
+// The same page sits in every bio (e.g. /links?c=tiktok); the source is passed on to each /go link.
+// Without a tag or a recognisable app, the click is still credited to this page ("links").
+export default async function LinksPage({ searchParams }: { searchParams: { c?: string | string[] } }) {
+  const h = headers();
+  const tag = typeof searchParams.c === "string" ? searchParams.c : null;
+  const source = detectSource(tag, h.get("user-agent"), h.get("referer")) ?? "links";
   const campaigns = await db.campaign
-    .findMany({ where: { status: "published" }, orderBy: { publishedAt: "desc" }, take: 20, select: { slug: true, title: true } })
+    .findMany({ where: { listed: true }, orderBy: { createdAt: "desc" }, take: 20, select: { slug: true, title: true } })
     .catch(() => []);
 
   return (
@@ -36,7 +43,7 @@ export default async function LinksPage() {
           {campaigns.map((c) => (
             <a
               key={c.slug}
-              href={`/go/${c.slug}?c=instagram`}
+              href={`/go/${c.slug}?c=${encodeURIComponent(source)}`}
               className="block w-full rounded-xl border border-[#4da6ff]/40 bg-[#4da6ff]/10 px-5 py-4 text-center font-semibold hover:bg-[#4da6ff]/20 transition-colors"
             >
               {c.title}
