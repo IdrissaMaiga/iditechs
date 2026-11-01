@@ -69,6 +69,8 @@ class WaMcp {
     if ("error" in d && !("result" in d)) throw new Error(JSON.stringify(d.error));
     const result = d.result as Record<string, unknown> | undefined;
     const content = result?.content as Array<{ text?: string }> | undefined;
+    // Tool failures arrive as a normal result with isError set, not as a JSON-RPC error.
+    if (result?.isError) throw new Error(content?.[0]?.text || `${tool} failed`);
     if (content?.[0]?.text) {
       try {
         return JSON.parse(content[0].text);

@@ -33,6 +33,7 @@ async function probeStatus(mcp: Awaited<ReturnType<typeof getMcp>>, inst: Probe)
 }
 
 export async function GET(req: NextRequest) {
+  if (!(await getOwner())) return json({ ok: false }, 401);
   const { searchParams } = req.nextUrl;
   const tag = searchParams.get("tag");
 
@@ -55,7 +56,6 @@ export async function GET(req: NextRequest) {
     });
   }
 
-  if (!(await getOwner())) return json({ ok: false }, 401);
   const instances = await db.waInstance.findMany({ orderBy: { createdAt: "desc" } });
 
   try {
@@ -139,7 +139,8 @@ export async function POST(req: NextRequest) {
       const { id } = body as { id: string };
       const inst = await db.waInstance.findUnique({ where: { id } });
       if (!inst) return json({ ok: false, error: "not found" }, 404);
-      if (inst.status !== "connected" && inst.status !== "open") {
+      const live = (await probeStatus(mcp, inst)) ?? inst.status;
+      if (live !== "connected" && live !== "open") {
         await mcp.call("wa_connect_instance", { instanceId: inst.instanceId }).catch(() => {});
       }
       const result = (await mcp.call("wa_get_qr_code", { instanceId: inst.instanceId })) as Record<string, unknown>;
@@ -158,7 +159,8 @@ export async function POST(req: NextRequest) {
       if (clean.length < 5) return json({ ok: false, error: "Phone number too short. Use country code + number, digits only (e.g. 22377374782)" }, 400);
       const inst = await db.waInstance.findUnique({ where: { id } });
       if (!inst) return json({ ok: false, error: "not found" }, 404);
-      if (inst.status !== "connected" && inst.status !== "open") {
+      const live = (await probeStatus(mcp, inst)) ?? inst.status;
+      if (live !== "connected" && live !== "open") {
         await mcp.call("wa_connect_instance", { instanceId: inst.instanceId }).catch(() => {});
       }
       const result = (await mcp.call("wa_get_pairing_code", {
