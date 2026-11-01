@@ -20,7 +20,7 @@ type Instance = {
   updatedAt: string;
 };
 
-const API_URL = "https://wa.projexel.eu";
+const API_URL = "https://wa.iditechs.com";
 
 const STATUS_COLORS: Record<string, string> = {
   connected: "#22c55e",

@@ -1,4 +1,4 @@
-const WA_MCP_URL = "https://wa.projexel.eu/mcp";
+const WA_MCP_URL = "https://wa.iditechs.com/mcp";
 const WA_MCP_TOKEN = process.env.WA_MCP_TOKEN || "";
 
 export const WA_API_URL = WA_MCP_URL.replace("/mcp", "");
