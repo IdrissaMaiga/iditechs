@@ -2,8 +2,13 @@ import type { NextRequest } from 'next/server';
 import type { PayDelivery, Payment, PaymentEvent } from '@prisma/client';
 import { isAdmin } from '@/lib/admin-auth';
 import { getOwner } from '@/lib/mail/owner';
+import { amountReturned } from './payments';
 
-/** The /pay screen (owner signed in) and scripts (x-admin-key) share the same admin routes. */
+/**
+ * Admin side of IDITECHS Pay, the payment gateway of IDITECHS's own applications. It only sees money collected through
+ * IDITECHS Pay; sales made through other channels (Google Play, App Store, WhatsApp) are counted by each application.
+ * The /pay screen (owner signed in) and scripts (x-admin-key) share the same admin routes.
+ */
 export async function isPayAdmin(req: NextRequest): Promise<boolean> {
   return isAdmin(req) || Boolean(await getOwner());
 }
@@ -21,6 +26,9 @@ export function adminPayment(p: Payment & { app?: { name: string } }) {
     currency: p.currency,
     description: p.description,
     status: p.status,
+    amount_refunded: p.amountRefunded,
+    dispute: p.disputeStatus ? { status: p.disputeStatus, amount: p.disputeAmount } : null,
+    amount_returned: amountReturned(p),
     checkout_url: p.status === 'pending' ? p.checkoutUrl : null,
     return_url: p.returnUrl,
     customer: p.customer,

@@ -5,7 +5,7 @@ import { db } from '@/lib/db';
 
 export const hashKey = (key: string) => crypto.createHash('sha256').update(key).digest('hex');
 
-/** Apps authenticate with "Authorization: Bearer ik_live_...". Only the hash of the key is stored. */
+/** Our applications authenticate with "Authorization: Bearer ik_live_...". Only the hash of the key is stored. */
 export async function payApp(req: NextRequest): Promise<PayApp | null> {
   const key = /^Bearer\s+(\S+)$/i.exec(req.headers.get('authorization') ?? '')?.[1];
   if (!key) return null;

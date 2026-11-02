@@ -26,36 +26,46 @@ export async function GET(req: NextRequest) {
 
   const rows = await db.payment.findMany({ where, orderBy: { createdAt: 'desc' }, take: PAGE + 1, include: { app: { select: { name: true } } } });
 
-  // Money actually received (succeeded), per currency: today, this month, all time, and per app
+  // Money kept from payments made through IDITECHS Pay only, per currency: succeeded, minus refunds and card disputes
+  // that took the money back (open or lost). Store and WhatsApp sales are not here: each application counts those.
   const now = new Date();
   const dayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
   const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
-  const sum = (from?: Date) =>
-    db.payment.groupBy({
-      by: ['currency'],
-      where: { status: 'succeeded', ...(from ? { completedAt: { gte: from } } : {}) },
-      _sum: { amount: true },
-      _count: true,
-    });
-  const [today, month, all, byApp, byStatus] = await Promise.all([
-    sum(dayStart),
-    sum(monthStart),
-    sum(),
-    db.payment.groupBy({ by: ['appId', 'currency'], where: { status: 'succeeded' }, _sum: { amount: true }, _count: true }),
+  type Row = { app_id: string; currency: string; amount: bigint | number; returned: bigint | number; count: bigint | number };
+  const net = (from: Date) => db.$queryRaw<Row[]>`
+    SELECT app_id, currency, SUM(amount) AS amount, COUNT(*) AS count,
+           SUM(LEAST(amount, amount_refunded + CASE WHEN dispute_status IN ('needs_response', 'under_review', 'lost') THEN dispute_amount ELSE 0 END)) AS returned
+      FROM pay_payments WHERE status = 'succeeded' AND completed_at >= ${from}
+     GROUP BY app_id, currency`;
+  const [todayRows, monthRows, allRows, byStatus] = await Promise.all([
+    net(dayStart),
+    net(monthStart),
+    net(new Date(0)),
     db.payment.groupBy({ by: ['status'], _count: true }),
   ]);
-  const shape = (g: { currency: string; _sum: { amount: number | null }; _count: number }[]) =>
-    g.map((x) => ({ currency: x.currency, amount: x._sum.amount ?? 0, count: x._count }));
+  const byCurrency = (rows: Row[]) => {
+    const m = new Map<string, { currency: string; amount: number; returned: number; count: number }>();
+    for (const r of rows) {
+      const cur = m.get(r.currency) ?? { currency: r.currency, amount: 0, returned: 0, count: 0 };
+      cur.amount += Number(r.amount) - Number(r.returned);
+      cur.returned += Number(r.returned);
+      cur.count += Number(r.count);
+      m.set(r.currency, cur);
+    }
+    return [...m.values()];
+  };
+  const returnedCount = await db.payment.count({ where: { status: 'succeeded', OR: [{ amountRefunded: { gt: 0 } }, { disputeStatus: { not: null } }] } });
 
   return NextResponse.json({
     payments: rows.slice(0, PAGE).map(adminPayment),
     next: rows.length > PAGE ? rows[PAGE - 1].id : null,
     totals: {
-      today: shape(today),
-      month: shape(month),
-      all: shape(all),
-      by_app: byApp.map((x) => ({ app_id: x.appId, currency: x.currency, amount: x._sum.amount ?? 0, count: x._count })),
+      today: byCurrency(todayRows),
+      month: byCurrency(monthRows),
+      all: byCurrency(allRows),
+      by_app: allRows.map((r) => ({ app_id: r.app_id, currency: r.currency, amount: Number(r.amount) - Number(r.returned), returned: Number(r.returned), count: Number(r.count) })),
       by_status: Object.fromEntries(byStatus.map((x) => [x.status, x._count])),
+      refunded_or_disputed: returnedCount,
     },
   });
 }

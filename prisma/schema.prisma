@@ -171,7 +171,8 @@ model CampaignClick {
   @@map("campaign_clicks")
 }
 
-// IDITECHS Pay: one payment API for any app that chooses to use it (lib/pay, app/api/pay)
+// IDITECHS Pay: payment gateway for IDITECHS's own applications (lib/pay, app/api/pay). It only records money collected
+// through itself; sales made through other channels (Google Play, App Store, WhatsApp) are counted by each application.
 model PayApp {
   id            String       @id
   name          String
@@ -199,6 +200,10 @@ model Payment {
   currency     String
   description  String         @default("")
   status       String         @default("pending")
+  // Money given back after a success: refunds so far, and the card dispute (chargeback) if any
+  amountRefunded Int          @default(0) @map("amount_refunded")
+  disputeStatus  String?      @map("dispute_status")
+  disputeAmount  Int          @default(0) @map("dispute_amount")
   providerRef  String?        @map("provider_ref")
   // Provider tokens (Orange pay_token/notif_token...), never returned by the API
   providerData Json           @default("{}") @map("provider_data")

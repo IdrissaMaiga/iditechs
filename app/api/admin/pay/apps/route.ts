@@ -18,7 +18,8 @@ export async function GET(req: NextRequest) {
   return NextResponse.json({ apps });
 }
 
-// Issues credentials to an app that wants to take payments through IDITECHS Pay. The key and secret are shown once.
+// Issues credentials to one of IDITECHS's own applications that wants to take payments through IDITECHS Pay.
+// The key and secret are shown once.
 export async function POST(req: NextRequest) {
   if (!(await isPayAdmin(req))) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   const parsed = z

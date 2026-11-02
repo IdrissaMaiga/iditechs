@@ -2,7 +2,7 @@ import crypto from 'crypto';
 import { Prisma, type PayApp } from '@prisma/client';
 import { db } from '@/lib/db';
 import { getConnector } from './connectors';
-import { ProviderError, customer, type Payment, type PaymentStatus } from './connectors/types';
+import { ProviderError, customer, type MoneyBack, type Payment, type PaymentStatus } from './connectors/types';
 import { attempt, CLAIM_MS } from './deliveries';
 import { isAvailable } from './switches';
 import { payConfig } from './config';
@@ -27,6 +27,16 @@ export interface NewPayment {
 
 export const newId = (prefix: string, bytes = 9) => `${prefix}_${crypto.randomBytes(bytes).toString('base64url')}`;
 
+// Card dispute statuses where the money has been taken back from us (open or lost). "won" gives it back; Stripe's
+// "warning_*" inquiries never take money.
+const DISPUTE_TAKES_MONEY = ['needs_response', 'under_review', 'lost'];
+
+/** Money the buyer has got back so far: refunds, plus a dispute while it is open or once lost. Never above the amount. */
+export function amountReturned(p: Pick<Payment, 'amount' | 'amountRefunded' | 'disputeStatus' | 'disputeAmount'>) {
+  const dispute = p.disputeStatus && DISPUTE_TAKES_MONEY.includes(p.disputeStatus) ? p.disputeAmount : 0;
+  return Math.min(p.amount, p.amountRefunded + dispute);
+}
+
 /** What apps see: never the provider tokens. */
 export function serialize(p: Payment) {
   return {
@@ -40,6 +50,11 @@ export function serialize(p: Payment) {
     checkout_url: p.status === 'pending' ? p.checkoutUrl : null,
     customer: customer(p),
     metadata: p.metadata,
+    // After a success: what was refunded, the card dispute if any, and the total given back (the app takes back
+    // the matching share of what it delivered, and gives it back if a dispute is won)
+    amount_refunded: p.amountRefunded,
+    dispute: p.disputeStatus ? { status: p.disputeStatus, amount: p.disputeAmount } : null,
+    amount_returned: amountReturned(p),
     created_at: p.createdAt,
     completed_at: p.completedAt,
   };
@@ -143,4 +158,35 @@ export async function applyStatus(paymentId: string, status: PaymentStatus | nul
   });
   if (deliveryId) void attempt(deliveryId).catch((err) => console.error('pay delivery', err));
   return db.payment.findUnique({ where: { id: paymentId } });
+}
+
+/**
+ * Records a refund or card dispute on a succeeded payment and notifies the app (payment.refunded, payment.disputed,
+ * payment.dispute_closed) with the new amount_returned. Refund totals only grow, so a replayed or late event never
+ * undoes a newer one. Nothing is sent when nothing changed.
+ */
+export async function applyMoneyBack(paymentId: string, back: MoneyBack, source: string, type: string, payload: unknown) {
+  const deliveryId = await db.$transaction(async (tx) => {
+    await tx.paymentEvent.create({ data: { paymentId, source, type, payload: (payload ?? {}) as Prisma.InputJsonValue } });
+    // Lock the row: two refund events at the same moment must not both send
+    const locked = await tx.$queryRaw<{ id: string }[]>`SELECT id FROM pay_payments WHERE id = ${paymentId} FOR UPDATE`;
+    if (!locked.length) return null;
+    const before = await tx.payment.findUniqueOrThrow({ where: { id: paymentId }, include: { app: true } });
+    const data: Prisma.PaymentUpdateInput = {};
+    if (back.amountRefunded !== undefined && back.amountRefunded > before.amountRefunded) data.amountRefunded = Math.min(back.amountRefunded, before.amount);
+    if (back.dispute && (back.dispute.status !== before.disputeStatus || back.dispute.amount !== before.disputeAmount)) {
+      data.disputeStatus = back.dispute.status;
+      data.disputeAmount = back.dispute.amount;
+    }
+    if (!Object.keys(data).length) return null;
+    const after = await tx.payment.update({ where: { id: paymentId }, data });
+    if (before.status !== 'succeeded' || !before.app.webhookUrl) return null;
+    const eventType = data.amountRefunded !== undefined ? 'payment.refunded' : ['won', 'lost', 'warning_closed'].includes(after.disputeStatus ?? '') ? 'payment.dispute_closed' : 'payment.disputed';
+    const body = JSON.stringify({ id: newId('evt'), type: eventType, created: Math.floor(Date.now() / 1000), data: serialize(after) });
+    const delivery = await tx.payDelivery.create({
+      data: { paymentId, appId: after.appId, eventType, body, nextAttemptAt: new Date(Date.now() + CLAIM_MS) },
+    });
+    return delivery.id;
+  });
+  if (deliveryId) void attempt(deliveryId).catch((err) => console.error('pay delivery', err));
 }

@@ -20,6 +20,17 @@ export interface WebhookResult {
   status: PaymentStatus | null;
   // Extra check against the stored payment (e.g. Orange's per-payment notif_token)
   verify?: (payment: Payment) => boolean;
+  // Provider ids to keep on the payment (e.g. Stripe's payment_intent, needed to match later refunds)
+  providerData?: Record<string, string>;
+  // Money given back after a success: a refund (cumulative total) or a card dispute (chargeback)
+  moneyBack?: MoneyBack;
+}
+
+export interface MoneyBack {
+  // The provider's payment id, to find the payment when the event does not name ours
+  paymentIntent?: string;
+  amountRefunded?: number;
+  dispute?: { status: string; amount: number };
 }
 
 /** One payment provider. Adding a provider = writing one of these and listing it in connectors/index.ts. */
@@ -34,6 +45,8 @@ export interface Connector {
   fetchStatus?(payment: Payment): Promise<PaymentStatus>;
   // Re-read the status from the provider instead of trusting the notification body
   confirmWebhooks?: boolean;
+  // Our payment id for a provider payment id, asked from the provider when it is not stored yet (null = not ours)
+  ownerOf?(paymentIntent: string): Promise<string | null>;
 }
 
 export class ProviderError extends Error {

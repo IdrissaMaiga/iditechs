@@ -71,7 +71,29 @@ export const stripe: Connector = {
     const ok = verifyTimestampedSignature(headers.get('stripe-signature') ?? undefined, cfg.webhookSecret, (t) => `${t}.${raw}`);
     if (!ok) throw new ProviderError('stripe', 'bad webhook signature');
     const event = JSON.parse(raw);
-    const session = event.data?.object ?? {};
+    const obj = event.data?.object ?? {};
+
+    // Refunds and card disputes (chargebacks) come on the charge / dispute, not the checkout session. They are matched
+    // by Stripe's payment_intent (stored when the checkout completed); events of other apps on the account match nothing.
+    if (event.type === 'charge.refunded') {
+      return {
+        type: event.type,
+        payload: { id: event.id, charge: obj.id, amount_refunded: obj.amount_refunded },
+        paymentId: obj.metadata?.iditechs_pay === '1' ? obj.metadata.payment_id : undefined,
+        status: null,
+        moneyBack: { paymentIntent: obj.payment_intent ?? undefined, amountRefunded: obj.amount_refunded },
+      };
+    }
+    if (event.type.startsWith('charge.dispute.')) {
+      return {
+        type: event.type,
+        payload: { id: event.id, dispute: obj.id, status: obj.status, amount: obj.amount, reason: obj.reason },
+        status: null,
+        moneyBack: { paymentIntent: obj.payment_intent ?? undefined, dispute: { status: obj.status, amount: obj.amount } },
+      };
+    }
+
+    const session = obj;
     // Not one of ours (another app on the same Stripe account): acknowledge and do nothing
     if (session.metadata?.iditechs_pay !== '1') return { type: event.type, payload: { id: event.id }, status: null };
     const statuses: Record<string, PaymentStatus | null> = {
@@ -86,10 +108,16 @@ export const stripe: Connector = {
       paymentId: session.metadata?.payment_id,
       providerRef: session.id,
       status: statuses[event.type] ?? null,
+      providerData: session.payment_intent ? { payment_intent: String(session.payment_intent) } : undefined,
       verify: (p) =>
         statuses[event.type] !== 'succeeded' ||
         (session.amount_total === p.amount && String(session.currency).toUpperCase() === p.currency),
     };
+  },
+
+  async ownerOf(paymentIntent) {
+    const pi = await call('GET', `/payment_intents/${encodeURIComponent(paymentIntent)}`);
+    return pi.metadata?.iditechs_pay === '1' && pi.metadata?.payment_id ? String(pi.metadata.payment_id) : null;
   },
 
   async fetchStatus(p) {

@@ -9,10 +9,11 @@ import { signOut } from "next-auth/react";
 
 type Provider = { id: string; label: string; configured: boolean; switched_on: boolean; available: boolean };
 type App = { id: string; name: string; apiKeyPrefix: string; webhookUrl: string | null; active: boolean; createdAt: string; _count: { payments: number } };
-type Money = { currency: string; amount: number; count: number };
+type Money = { currency: string; amount: number; count: number; returned?: number };
 type Payment = {
   id: string; app_id: string; app_name: string | null; reference: string; provider: string; provider_ref: string | null;
   amount: number; currency: string; description: string; status: string; checkout_url: string | null; return_url: string;
+  amount_refunded: number; dispute: { status: string; amount: number } | null; amount_returned: number;
   customer: Record<string, string>; metadata: Record<string, unknown>; created_at: string; completed_at: string | null;
 };
 type PayEvent = { id: string; source: string; type: string; payload: unknown; created_at: string };
@@ -20,7 +21,7 @@ type Delivery = {
   id: string; payment_id: string; app_id: string; app_name: string | null; webhook_url: string | null; event_type: string;
   attempts: number; next_attempt_at: string; last_status: number | null; last_error: string | null; delivered_at: string | null; created_at: string;
 };
-type Totals = { today: Money[]; month: Money[]; all: Money[]; by_app: (Money & { app_id: string })[]; by_status: Record<string, number> };
+type Totals = { today: Money[]; month: Money[]; all: Money[]; by_app: (Money & { app_id: string })[]; by_status: Record<string, number>; refunded_or_disputed: number };
 type Tab = "overview" | "payments" | "apps" | "notifications";
 
 const STATUS_COLORS: Record<string, string> = {
@@ -197,7 +198,7 @@ export function PayClient() {
         <div style={{ display: "flex", gap: 6, marginBottom: 20, flexWrap: "wrap" }}>
           {(["overview", "payments", "apps", "notifications"] as Tab[]).map((t) => (
             <button key={t} onClick={() => setTab(t)} className={tab === t ? "btn-primary" : ""} style={{ textTransform: "capitalize" }}>
-              {t}
+              {t === "apps" ? "our apps" : t}
               {t === "notifications" && failing.length > 0 && (
                 <span style={tab === t ? { ...chip("#04101f"), background: "#fff" } : chip("#ef4444")}>{failing.length}</span>
               )}
@@ -241,16 +242,25 @@ export function PayClient() {
         {/* ---------------- Overview ---------------- */}
         {tab === "overview" && (
           <>
+            <p style={{ color: "#9aa3b5", fontSize: 13, marginTop: 0 }}>
+              IDITECHS Pay is the payment gateway of IDITECHS&apos;s own applications. This screen only counts money that went
+              through IDITECHS Pay. Purchases made through other channels (Google Play, App Store, WhatsApp) are counted by
+              each application, not here.
+            </p>
             <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 12, marginBottom: 20 }}>
               {[
-                ["Received today", totals?.today ?? []],
-                ["This month", totals?.month ?? []],
-                ["All time", totals?.all ?? []],
+                ["Kept today", totals?.today ?? []],
+                ["Kept this month", totals?.month ?? []],
+                ["Kept, all time", totals?.all ?? []],
               ].map(([label, list]) => (
                 <div key={label as string} style={card}>
                   <div style={{ color: "#9aa3b5", fontSize: 13 }}>{label as string}</div>
                   <div style={{ fontSize: 22, fontWeight: 700, marginTop: 4 }}>{moneyList(list as Money[])}</div>
-                  <div style={{ color: "#6a7284", fontSize: 12 }}>{(list as Money[]).reduce((n, m) => n + m.count, 0)} payments succeeded</div>
+                  <div style={{ color: "#6a7284", fontSize: 12 }}>
+                    {(list as Money[]).reduce((n, m) => n + m.count, 0)} payments succeeded
+                    {(list as Money[]).some((m) => (m.returned ?? 0) > 0) &&
+                      ` · ${moneyList((list as Money[]).filter((m) => (m.returned ?? 0) > 0).map((m) => ({ ...m, amount: m.returned ?? 0 })))} refunded or disputed`}
+                  </div>
                 </div>
               ))}
             </div>
@@ -286,9 +296,10 @@ export function PayClient() {
                   {s}: {totals?.by_status[s] ?? 0}
                 </span>
               ))}
+              <span style={{ ...chip("#a855f7"), fontSize: 13, padding: "4px 10px" }}>refunded or disputed: {totals?.refunded_or_disputed ?? 0}</span>
             </div>
 
-            <h2 style={h2}>Received by app</h2>
+            <h2 style={h2}>Kept by app (through IDITECHS Pay)</h2>
             {(totals?.by_app ?? []).length === 0 ? (
               <p style={{ color: "#6a7284" }}>No payment received yet.</p>
             ) : (
@@ -365,6 +376,7 @@ export function PayClient() {
                         <td style={{ ...td, fontWeight: 600 }}>{money(p.amount, p.currency)}</td>
                         <td style={td}>
                           <span style={chip(STATUS_COLORS[p.status] ?? "#666")}>{p.status}</span>
+                          <MoneyBackChip p={p} />
                         </td>
                         <td style={td}>
                           <FiChevronRight color="#6a7284" />
@@ -387,16 +399,18 @@ export function PayClient() {
         {tab === "apps" && (
           <>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12, gap: 12, flexWrap: "wrap" }}>
-              <p style={{ color: "#9aa3b5", fontSize: 13, margin: 0 }}>Each app that chooses to use the gateway gets its own key and only sees its own payments.</p>
+              <p style={{ color: "#9aa3b5", fontSize: 13, margin: 0 }}>
+                IDITECHS&apos;s own applications that take payments through IDITECHS Pay. Each one has its own key and only sees its own payments.
+              </p>
               <button onClick={() => setNewApp({ ...newApp, open: !newApp.open })} className="btn-primary">
-                <FiPlus /> New app
+                <FiPlus /> Add one of our apps
               </button>
             </div>
 
             {newApp.open && (
               <div style={card}>
                 <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-                  <input placeholder="App name (e.g. Djarabi)" value={newApp.name} onChange={(e) => setNewApp({ ...newApp, name: e.target.value })} style={{ flex: 1, minWidth: 160 }} />
+                  <input placeholder="Our application's name (e.g. Djarabi)" value={newApp.name} onChange={(e) => setNewApp({ ...newApp, name: e.target.value })} style={{ flex: 1, minWidth: 160 }} />
                   <input
                     placeholder="Webhook URL (https://..., optional)"
                     value={newApp.webhook}
@@ -416,7 +430,7 @@ export function PayClient() {
             {apps.length === 0 ? (
               <div style={{ textAlign: "center", padding: 60, color: "#6a7284" }}>
                 <FiKey size={40} />
-                <p>No app uses the gateway yet. Create one to get its API key.</p>
+                <p>None of our applications uses IDITECHS Pay yet. Add one to get its API key.</p>
               </div>
             ) : (
               apps.map((a) => (
@@ -505,6 +519,7 @@ export function PayClient() {
               </button>
             </div>
             <span style={chip(STATUS_COLORS[detail.payment.status] ?? "#666")}>{detail.payment.status}</span>
+            <MoneyBackChip p={detail.payment} />
             <div style={{ ...card, marginTop: 16, fontSize: 13 }}>
               {[
                 ["Payment id", detail.payment.id],
@@ -513,6 +528,8 @@ export function PayClient() {
                 ["Description", detail.payment.description || "-"],
                 ["Method", providers.find((x) => x.id === detail.payment.provider)?.label ?? detail.payment.provider],
                 ["Provider ref", detail.payment.provider_ref ?? "-"],
+                ["Refunded", detail.payment.amount_refunded ? money(detail.payment.amount_refunded, detail.payment.currency) : "-"],
+                ["Card dispute", detail.payment.dispute ? `${detail.payment.dispute.status} (${money(detail.payment.dispute.amount, detail.payment.currency)})` : "-"],
                 ["Customer", Object.values(detail.payment.customer ?? {}).join(", ") || "-"],
                 ["Created", when(detail.payment.created_at)],
                 ["Finished", when(detail.payment.completed_at)],
@@ -552,6 +569,16 @@ export function PayClient() {
       )}
     </div>
   );
+}
+
+// Shown when money went back to the buyer after a success: a refund, or a card dispute (chargeback)
+function MoneyBackChip({ p }: { p: Pick<Payment, "amount_refunded" | "dispute" | "currency"> }) {
+  if (p.dispute) {
+    const color = p.dispute.status === "won" || p.dispute.status === "warning_closed" ? "#22c55e" : "#a855f7";
+    return <span style={{ ...chip(color), marginLeft: 6 }}>dispute: {p.dispute.status}</span>;
+  }
+  if (p.amount_refunded > 0) return <span style={{ ...chip("#a855f7"), marginLeft: 6 }}>refunded {money(p.amount_refunded, p.currency)}</span>;
+  return null;
 }
 
 function DeliveryRow({ d, onRetry, onOpen, busy }: { d: Delivery; onRetry: () => void; onOpen?: () => void; busy: boolean }) {
