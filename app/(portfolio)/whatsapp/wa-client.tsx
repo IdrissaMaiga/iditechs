@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   FiPlus, FiTrash2, FiRefreshCw, FiSmartphone, FiWifi, FiWifiOff,
   FiLink, FiCheck, FiX, FiCopy, FiLogOut, FiGlobe,
@@ -18,6 +18,7 @@ type Instance = {
   webhookUrl: string | null;
   createdAt: string;
   updatedAt: string;
+  lastConnected?: string | number | null;
 };
 
 const API_URL = "https://wa.iditechs.com";
@@ -28,10 +29,30 @@ const STATUS_COLORS: Record<string, string> = {
   created: "#a855f7",
   connecting: "#f59e0b",
   pairing: "#f59e0b",
+  qr_pending: "#f59e0b",
+  offline: "#ef4444",
   disconnected: "#ef4444",
   closed: "#ef4444",
   gone: "#6b7280",
 };
+
+// What each server status means for the owner
+const STATUS_LABELS: Record<string, string> = {
+  connected: "connected",
+  connecting: "connecting…",
+  qr_pending: "waiting for QR scan",
+  offline: "offline: relink with QR or pairing code",
+  disconnected: "disconnected",
+  gone: "missing on the server",
+};
+
+const REFRESH_MS = 15_000;
+
+function since(value: string | number | null | undefined) {
+  if (!value) return null;
+  const d = new Date(typeof value === "number" && value < 1e12 ? value * 1000 : value);
+  return Number.isNaN(d.getTime()) ? null : d.toLocaleString();
+}
 
 function copied(text: string) {
   navigator.clipboard.writeText(text);
@@ -39,6 +60,7 @@ function copied(text: string) {
 
 export function WaClient({ initialInstances }: { initialInstances: Instance[] }) {
   const [instances, setInstances] = useState<Instance[]>(initialInstances);
+  const [live, setLive] = useState(true);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [createName, setCreateName] = useState("");
@@ -80,10 +102,37 @@ export function WaClient({ initialInstances }: { initialInstances: Instance[] })
     try {
       const res = await fetch("/api/whatsapp");
       const data = await res.json();
-      if (data.ok) setInstances(data.instances);
+      if (data.ok) {
+        setInstances(data.instances);
+        setLive(data.live !== false);
+      }
     } finally {
       setLoading(false);
     }
+  }, []);
+
+  // Keep statuses current: right away, then every 15 s while the tab is visible
+  useEffect(() => {
+    const tick = () => {
+      if (document.visibilityState === "visible" && !busyRef.current) {
+        fetch("/api/whatsapp")
+          .then((r) => r.json())
+          .then((data) => {
+            if (data.ok) {
+              setInstances(data.instances);
+              setLive(data.live !== false);
+            }
+          })
+          .catch(() => setLive(false));
+      }
+    };
+    tick();
+    const timer = setInterval(tick, REFRESH_MS);
+    document.addEventListener("visibilitychange", tick);
+    return () => {
+      clearInterval(timer);
+      document.removeEventListener("visibilitychange", tick);
+    };
   }, []);
 
   const handleCreate = async () => {
@@ -197,6 +246,12 @@ export function WaClient({ initialInstances }: { initialInstances: Instance[] })
           </div>
         </div>
 
+        {!live && (
+          <div style={{ background: "#2a1f0a", border: "1px solid #f59e0b", borderRadius: 8, padding: 12, marginBottom: 16, color: "#f59e0b" }}>
+            The WhatsApp server is not answering: statuses below are the last known ones.
+          </div>
+        )}
+
         {error && (
           <div style={{ background: "#2d1111", border: "1px solid #7f1d1d", borderRadius: 8, padding: "12px 16px", marginBottom: 16, color: "#fca5a5" }}>
             {error}
@@ -253,8 +308,11 @@ export function WaClient({ initialInstances }: { initialInstances: Instance[] })
                       style={{ ...chipStyle(STATUS_COLORS[inst.status] ?? "#666"), cursor: "pointer", border: "none" }}
                       title="Click to refresh status"
                     >
-                      {inst.status}
+                      {STATUS_LABELS[inst.status] ?? inst.status}
                     </button>
+                    {since(inst.lastConnected) && (
+                      <span style={{ fontSize: 12, color: "#555" }}>last connected {since(inst.lastConnected)}</span>
+                    )}
                     <span style={{ fontSize: 12, color: "#555" }}>{inst.channel}</span>
                   </div>
                   <div style={{ display: "flex", gap: 6 }}>

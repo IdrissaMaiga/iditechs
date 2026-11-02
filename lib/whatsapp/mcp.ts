@@ -80,6 +80,43 @@ class WaMcp {
     }
     return result ?? d;
   }
+
+  /** Reads an MCP resource (read-only, no side effects) and parses its JSON text. */
+  async read(uri: string): Promise<unknown> {
+    const d = await this.post({ jsonrpc: "2.0", id: 4, method: "resources/read", params: { uri } });
+    if ("error" in d && !("result" in d)) throw new Error(JSON.stringify(d.error));
+    const contents = (d.result as { contents?: Array<{ text?: string }> } | undefined)?.contents;
+    return JSON.parse(contents?.[0]?.text ?? "null");
+  }
+}
+
+export type LiveInstance = { status: string; phoneNumber: string | null; lastConnected: string | number | null };
+
+// A normal reconnect takes seconds; longer than this means the line is really down
+const OFFLINE_AFTER_MS = 2 * 60 * 1000;
+
+/**
+ * Real state of every instance, straight from the WhatsApp server (whatsapp://instances).
+ * "offline": connecting or disconnected for over 2 minutes since it was last connected (for example
+ * WhatsApp removed the linked device). The server's phone number field is not used: it can be empty
+ * on a healthy instance.
+ */
+export async function liveInstances(mcp: WaMcp): Promise<Map<string, LiveInstance>> {
+  const list = (await mcp.read("whatsapp://instances")) as Array<{
+    id: string;
+    status: string;
+    phoneNumber: string | null;
+    lastConnected: string | number | null;
+  }> | null;
+  const map = new Map<string, LiveInstance>();
+  for (const i of list ?? []) {
+    // qr_pending is already the "scan me" state; keep it
+    const last = i.lastConnected ? new Date(i.lastConnected).getTime() : 0;
+    const down = (i.status === "connecting" || i.status === "disconnected") && Date.now() - last > OFFLINE_AFTER_MS;
+    const status = down ? "offline" : i.status;
+    map.set(i.id, { status, phoneNumber: i.phoneNumber, lastConnected: i.lastConnected });
+  }
+  return map;
 }
 
 export async function getMcp(): Promise<WaMcp> {

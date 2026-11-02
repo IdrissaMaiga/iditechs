@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getOwner } from "@/lib/mail/owner";
-import { getMcp, WA_API_URL } from "@/lib/whatsapp/mcp";
+import { getMcp, liveInstances, WA_API_URL } from "@/lib/whatsapp/mcp";
 import { db } from "@/lib/db";
 import QRCode from "qrcode";
 
@@ -11,25 +11,25 @@ function json(data: unknown, status = 200) {
   return NextResponse.json(data, { status });
 }
 
-type Probe = { instanceId: string; status: string; phoneNumber: string | null };
+// Statuses come from the WhatsApp server itself (read-only resource), never from probing calls:
+// connected, connecting, qr_pending, disconnected, offline (down for over 2 minutes) or gone.
+async function syncStatuses<T extends { id: string; instanceId: string; status: string }>(
+  mcp: Awaited<ReturnType<typeof getMcp>>,
+  instances: T[],
+): Promise<Array<T & { lastConnected: string | number | null }>> {
+  const live = await liveInstances(mcp);
+  return Promise.all(
+    instances.map(async (inst) => {
+      const l = live.get(inst.instanceId);
+      const status = l?.status ?? "gone";
+      if (status !== inst.status) await db.waInstance.update({ where: { id: inst.id }, data: { status } });
+      return { ...inst, status, lastConnected: l?.lastConnected ?? null };
+    }),
+  );
+}
 
-// wa_connect_instance answers "connecting" even when the socket is already up, so liveness is
-// probed with a lookup that only succeeds on a connected instance. Returns null for "no change".
-async function probeStatus(mcp: Awaited<ReturnType<typeof getMcp>>, inst: Probe): Promise<string | null> {
-  if (inst.status === "disconnected" || inst.status === "gone") return null;
-  try {
-    if (inst.phoneNumber) {
-      await mcp.call("wa_check_number_exists", { instanceId: inst.instanceId, phoneNumber: inst.phoneNumber });
-      return "open";
-    }
-    const r = (await mcp.call("wa_connect_instance", { instanceId: inst.instanceId })) as Record<string, unknown>;
-    return (r.status as string) || null;
-  } catch (e) {
-    const msg = e instanceof Error ? e.message : "";
-    if (msg.includes("not found")) return "gone";
-    if (/not initialized|not connected|closed/i.test(msg) && (inst.status === "open" || inst.status === "connected")) return "closed";
-    return null;
-  }
+async function liveStatus(mcp: Awaited<ReturnType<typeof getMcp>>, instanceId: string) {
+  return (await liveInstances(mcp)).get(instanceId)?.status ?? "gone";
 }
 
 export async function GET(req: NextRequest) {
@@ -38,10 +38,15 @@ export async function GET(req: NextRequest) {
   const tag = searchParams.get("tag");
 
   if (tag) {
-    const instances = await db.waInstance.findMany({
+    let instances = await db.waInstance.findMany({
       where: { tags: { has: tag } },
-      select: { instanceId: true, name: true, phoneNumber: true, status: true, webhookUrl: true, tags: true },
+      select: { id: true, instanceId: true, name: true, phoneNumber: true, status: true, webhookUrl: true, tags: true },
     });
+    try {
+      instances = await syncStatuses(await getMcp(), instances);
+    } catch {
+      // WhatsApp server unreachable: last known statuses
+    }
     return json({
       ok: true,
       apiUrl: WA_API_URL,
@@ -59,21 +64,11 @@ export async function GET(req: NextRequest) {
   const instances = await db.waInstance.findMany({ orderBy: { createdAt: "desc" } });
 
   try {
-    const mcp = await getMcp();
-    await Promise.all(
-      instances.map(async (inst) => {
-        const live = await probeStatus(mcp, inst);
-        if (live && live !== inst.status) {
-          await db.waInstance.update({ where: { id: inst.id }, data: { status: live } });
-          inst.status = live;
-        }
-      })
-    );
+    return json({ ok: true, live: true, instances: await syncStatuses(await getMcp(), instances) });
   } catch {
-    // MCP unreachable — return stale statuses rather than failing
+    // WhatsApp server unreachable: last known statuses, flagged so the page can say so
+    return json({ ok: true, live: false, instances });
   }
-
-  return json({ ok: true, instances });
 }
 
 export async function POST(req: NextRequest) {
@@ -139,8 +134,7 @@ export async function POST(req: NextRequest) {
       const { id } = body as { id: string };
       const inst = await db.waInstance.findUnique({ where: { id } });
       if (!inst) return json({ ok: false, error: "not found" }, 404);
-      const live = (await probeStatus(mcp, inst)) ?? inst.status;
-      if (live !== "connected" && live !== "open") {
+      if ((await liveStatus(mcp, inst.instanceId)) !== "connected") {
         await mcp.call("wa_connect_instance", { instanceId: inst.instanceId }).catch(() => {});
       }
       const result = (await mcp.call("wa_get_qr_code", { instanceId: inst.instanceId })) as Record<string, unknown>;
@@ -159,8 +153,7 @@ export async function POST(req: NextRequest) {
       if (clean.length < 5) return json({ ok: false, error: "Phone number too short. Use country code + number, digits only (e.g. 22377374782)" }, 400);
       const inst = await db.waInstance.findUnique({ where: { id } });
       if (!inst) return json({ ok: false, error: "not found" }, 404);
-      const live = (await probeStatus(mcp, inst)) ?? inst.status;
-      if (live !== "connected" && live !== "open") {
+      if ((await liveStatus(mcp, inst.instanceId)) !== "connected") {
         await mcp.call("wa_connect_instance", { instanceId: inst.instanceId }).catch(() => {});
       }
       const result = (await mcp.call("wa_get_pairing_code", {
@@ -188,7 +181,7 @@ export async function POST(req: NextRequest) {
       const { id } = body as { id: string };
       const inst = await db.waInstance.findUnique({ where: { id } });
       if (!inst) return json({ ok: false, error: "not found" }, 404);
-      const status = (await probeStatus(mcp, inst)) ?? inst.status;
+      const status = await liveStatus(mcp, inst.instanceId);
       if (status !== inst.status) {
         await db.waInstance.update({ where: { id }, data: { status } });
       }
