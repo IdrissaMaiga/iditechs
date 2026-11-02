@@ -170,3 +170,82 @@ model CampaignClick {
   @@index([campaignId, at])
   @@map("campaign_clicks")
 }
+
+// IDITECHS Pay: one payment API for any app that chooses to use it (lib/pay, app/api/pay)
+model PayApp {
+  id            String       @id
+  name          String
+  apiKeyHash    String       @unique @map("api_key_hash")
+  apiKeyPrefix  String       @map("api_key_prefix")
+  webhookUrl    String?      @map("webhook_url")
+  webhookSecret String       @map("webhook_secret")
+  active        Boolean      @default(true)
+  payments      Payment[]
+  deliveries    PayDelivery[]
+  createdAt     DateTime     @default(now()) @map("created_at")
+
+  @@map("pay_apps")
+}
+
+model Payment {
+  id           String         @id
+  appId        String         @map("app_id")
+  app          PayApp         @relation(fields: [appId], references: [id])
+  // The app's own order id; one payment per (app, reference)
+  reference    String
+  provider     String
+  // Smallest unit of the currency (FCFA for XOF)
+  amount       Int
+  currency     String
+  description  String         @default("")
+  status       String         @default("pending")
+  providerRef  String?        @map("provider_ref")
+  // Provider tokens (Orange pay_token/notif_token...), never returned by the API
+  providerData Json           @default("{}") @map("provider_data")
+  checkoutUrl  String?        @map("checkout_url")
+  returnUrl    String         @map("return_url")
+  cancelUrl    String?        @map("cancel_url")
+  customer     Json           @default("{}")
+  metadata     Json           @default("{}")
+  events       PaymentEvent[]
+  deliveries   PayDelivery[]
+  createdAt    DateTime       @default(now()) @map("created_at")
+  updatedAt    DateTime       @updatedAt @map("updated_at")
+  completedAt  DateTime?      @map("completed_at")
+
+  @@unique([appId, reference])
+  @@index([provider, providerRef])
+  @@map("pay_payments")
+}
+
+model PaymentEvent {
+  id        BigInt   @id @default(autoincrement())
+  paymentId String   @map("payment_id")
+  payment   Payment  @relation(fields: [paymentId], references: [id], onDelete: Cascade)
+  source    String
+  type      String
+  payload   Json     @default("{}")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([paymentId])
+  @@map("pay_events")
+}
+
+model PayDelivery {
+  id            BigInt    @id @default(autoincrement())
+  paymentId     String    @map("payment_id")
+  payment       Payment   @relation(fields: [paymentId], references: [id], onDelete: Cascade)
+  appId         String    @map("app_id")
+  app           PayApp    @relation(fields: [appId], references: [id])
+  eventType     String    @map("event_type")
+  body          String
+  attempts      Int       @default(0)
+  nextAttemptAt DateTime  @default(now()) @map("next_attempt_at")
+  lastStatus    Int?      @map("last_status")
+  lastError     String?   @map("last_error")
+  deliveredAt   DateTime? @map("delivered_at")
+  createdAt     DateTime  @default(now()) @map("created_at")
+
+  @@index([nextAttemptAt])
+  @@map("pay_deliveries")
+}
