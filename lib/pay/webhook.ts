@@ -18,7 +18,7 @@ export async function handleWebhook(req: NextRequest, provider: string, paymentI
     throw err;
   }
 
-  // Not ours (e.g. another app's event on a shared Stripe account): acknowledge without storing anything
+  // Not tagged as ours (any other application using the same provider account): acknowledge without storing anything
   if (!event.paymentId && !event.providerRef && !event.moneyBack?.paymentIntent) return NextResponse.json({ received: true, ignored: true });
 
   let payment: Payment | null = null;
@@ -33,7 +33,7 @@ export async function handleWebhook(req: NextRequest, provider: string, paymentI
       if (ours) payment = await db.payment.findFirst({ where: { id: ours, provider: connector.id } });
     }
   }
-  // Unknown payment (another app on the same account): acknowledge so the provider stops retrying
+  // Not a payment of IDITECHS Pay (no tag, unknown id): acknowledge so the provider stops retrying
   if (!payment) return NextResponse.json({ received: true, ignored: true });
   if (event.verify && !event.verify(payment)) throw new PayError(401, 'invalid_webhook', 'Token does not match this payment.');
 

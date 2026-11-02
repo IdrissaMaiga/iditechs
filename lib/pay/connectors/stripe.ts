@@ -8,9 +8,10 @@ import { ProviderError, customer, readJson, PROVIDER_TIMEOUT_MS, type Connector,
  * "Stripe-Signature: t=..,v1=..", where v1 = HMAC-SHA256(secret, t + "." + raw body).
  * Amounts are in the currency's smallest unit; XOF has no decimals, so 5000 = 5 000 FCFA.
  *
- * Other apps (AgentiCareer, the istripe back office) may share the Stripe account and receive the same events.
- * Every object made here carries metadata `iditechs_pay=1` + the app id, and events without that tag are ignored,
- * so neither side ever acts on the other's payments. App metadata is never copied into Stripe.
+ * Any other application may use the same Stripe account directly (AgentiCareer, the istripe back office, or any future
+ * one) and Stripe sends its events here too. The ONLY way to know a payment went through IDITECHS Pay is the tag:
+ * every object made here carries metadata `iditechs_pay=1` + our payment id and app id, and anything without that tag
+ * is ignored and never stored. App metadata is never copied into Stripe.
  */
 const cfg = config.stripe;
 
@@ -74,7 +75,8 @@ export const stripe: Connector = {
     const obj = event.data?.object ?? {};
 
     // Refunds and card disputes (chargebacks) come on the charge / dispute, not the checkout session. They are matched
-    // by Stripe's payment_intent (stored when the checkout completed); events of other apps on the account match nothing.
+    // by Stripe's payment_intent: either kept from one of our tagged checkouts, or the PaymentIntent's own iditechs_pay tag
+    // (ownerOf). No tag = not ours: ignored, whatever application it belongs to.
     if (event.type === 'charge.refunded') {
       return {
         type: event.type,
@@ -94,7 +96,7 @@ export const stripe: Connector = {
     }
 
     const session = obj;
-    // Not one of ours (another app on the same Stripe account): acknowledge and do nothing
+    // No iditechs_pay tag: not a payment of IDITECHS Pay (any other application on the account). Acknowledge, do nothing
     if (session.metadata?.iditechs_pay !== '1') return { type: event.type, payload: { id: event.id }, status: null };
     const statuses: Record<string, PaymentStatus | null> = {
       'checkout.session.completed': sessionStatus(session),

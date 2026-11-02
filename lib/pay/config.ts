@@ -24,7 +24,7 @@ export const payConfig = {
     apiBase: process.env.STRIPE_API_BASE ?? 'https://api.stripe.com',
   },
   // Each app may create at most this many payments per minute, and ask the provider for a payment's status at most
-  // once per this many seconds: the Stripe rate limit is shared with AgentiCareer and the back office
+  // once per this many seconds: the Stripe rate limit is shared with every other application on the account
   limits: { paymentsPerMinute: 30, refreshSeconds: 10 },
   // App notifications: after the n-th failure wait 30s * 2^(n-1), so 8 attempts span about an hour
   delivery: { maxAttempts: 8, baseDelaySeconds: 30, timeoutMs: 10_000 },
