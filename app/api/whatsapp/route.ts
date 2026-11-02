@@ -28,6 +28,21 @@ async function syncStatuses<T extends { id: string; instanceId: string; status: 
   );
 }
 
+// Right after a drop the server keeps reconnecting to WhatsApp; between attempts QR and pairing calls
+// fail with "not connected". Keep asking for up to 30 s instead of failing on the first gap.
+async function whenReady<T>(fn: () => Promise<T>): Promise<T> {
+  const until = Date.now() + 30_000;
+  for (;;) {
+    try {
+      return await fn();
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : "";
+      if (!/not connected|Connection Closed|not initialized/i.test(msg) || Date.now() > until) throw e;
+      await new Promise((r) => setTimeout(r, 2000));
+    }
+  }
+}
+
 async function liveStatus(mcp: Awaited<ReturnType<typeof getMcp>>, instanceId: string) {
   return (await liveInstances(mcp)).get(instanceId)?.status ?? "gone";
 }
@@ -137,7 +152,7 @@ export async function POST(req: NextRequest) {
       if ((await liveStatus(mcp, inst.instanceId)) !== "connected") {
         await mcp.call("wa_connect_instance", { instanceId: inst.instanceId }).catch(() => {});
       }
-      const result = (await mcp.call("wa_get_qr_code", { instanceId: inst.instanceId })) as Record<string, unknown>;
+      const result = (await whenReady(() => mcp.call("wa_get_qr_code", { instanceId: inst.instanceId }))) as Record<string, unknown>;
       const rawQr = (result.qrCode ?? result.qr ?? result.code ?? "") as string;
       let qrImage = rawQr;
       if (rawQr && !rawQr.startsWith("data:") && !rawQr.startsWith("http")) {
@@ -156,10 +171,9 @@ export async function POST(req: NextRequest) {
       if ((await liveStatus(mcp, inst.instanceId)) !== "connected") {
         await mcp.call("wa_connect_instance", { instanceId: inst.instanceId }).catch(() => {});
       }
-      const result = (await mcp.call("wa_get_pairing_code", {
-        instanceId: inst.instanceId,
-        phoneNumber: clean,
-      })) as Record<string, unknown>;
+      const result = (await whenReady(() =>
+        mcp.call("wa_get_pairing_code", { instanceId: inst.instanceId, phoneNumber: clean }),
+      )) as Record<string, unknown>;
       const pairingCode = (result.pairingCode ?? result.code ?? "") as string;
       await db.waInstance.update({ where: { id }, data: { phoneNumber: clean, status: "pairing" } });
       return json({ ok: true, pairingCode });
