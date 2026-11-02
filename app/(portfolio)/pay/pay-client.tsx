@@ -31,7 +31,6 @@ const STATUS_COLORS: Record<string, string> = {
   cancelled: "#6b7280",
   expired: "#6b7280",
 };
-const MAX_ATTEMPTS = 8;
 
 // Amounts are stored in the smallest unit of the currency (FCFA for XOF, cents for EUR)
 function money(amount: number, currency: string) {
@@ -68,6 +67,8 @@ export function PayClient() {
   const [newApp, setNewApp] = useState({ open: false, name: "", webhook: "" });
   const [editHook, setEditHook] = useState<{ id: string; url: string } | null>(null);
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
+  // Retry limit of app notifications, from the server (payConfig.delivery.maxAttempts)
+  const [maxAttempts, setMaxAttempts] = useState(78);
 
   const run = useCallback(async (fn: () => Promise<void>) => {
     setError(null);
@@ -85,6 +86,8 @@ export function PayClient() {
     async (more = false) => {
       const sp = new URLSearchParams(Object.entries(filters).filter(([, v]) => v));
       if (more && next) sp.set("before", next);
+      // "Kept today / this month" follow the timezone of this browser
+      sp.set("tz", Intl.DateTimeFormat().resolvedOptions().timeZone);
       const data = await call<{ payments: Payment[]; next: string | null; totals: Totals }>(`/api/admin/pay/payments?${sp}`);
       setPayments((prev) => (more ? [...prev, ...data.payments] : data.payments));
       setNext(data.next);
@@ -99,8 +102,9 @@ export function PayClient() {
         const [p, a, d] = await Promise.all([
           call<{ providers: Provider[] }>("/api/admin/pay/providers"),
           call<{ apps: App[] }>("/api/admin/pay/apps"),
-          call<{ deliveries: Delivery[] }>("/api/admin/pay/deliveries"),
+          call<{ deliveries: Delivery[]; max_attempts: number }>("/api/admin/pay/deliveries"),
         ]);
+        setMaxAttempts(d.max_attempts);
         setProviders(p.providers);
         setApps(a.apps);
         setDeliveries(d.deliveries);
@@ -494,7 +498,7 @@ export function PayClient() {
         {tab === "notifications" && (
           <>
             <p style={{ color: "#9aa3b5", fontSize: 13, marginTop: 0 }}>
-              Messages to apps that have not been delivered yet. They are retried automatically every minute ({MAX_ATTEMPTS} attempts over about an hour).
+              Messages to apps that have not been delivered yet. They are retried automatically for about 3 days (at most once an hour after the first hour), and you get a WhatsApp alert after an hour of failures and when one gives up.
             </p>
             {deliveries.length === 0 ? (
               <div style={{ textAlign: "center", padding: 60, color: "#6a7284" }}>
@@ -502,7 +506,7 @@ export function PayClient() {
                 <p>Every app has been notified.</p>
               </div>
             ) : (
-              deliveries.map((d) => <DeliveryRow key={d.id} d={d} onRetry={() => retry(d)} onOpen={() => openPayment(d.payment_id)} busy={loading} />)
+              deliveries.map((d) => <DeliveryRow key={d.id} d={d} max={maxAttempts} onRetry={() => retry(d)} onOpen={() => openPayment(d.payment_id)} busy={loading} />)
             )}
           </>
         )}
@@ -562,7 +566,7 @@ export function PayClient() {
             {detail.deliveries.length === 0 ? (
               <p style={{ color: "#6a7284", fontSize: 13 }}>None sent (the payment has not finished, or the app has no webhook).</p>
             ) : (
-              detail.deliveries.map((d) => <DeliveryRow key={d.id} d={d} onRetry={() => retry(d)} busy={loading} />)
+              detail.deliveries.map((d) => <DeliveryRow key={d.id} d={d} max={maxAttempts} onRetry={() => retry(d)} busy={loading} />)
             )}
           </div>
         </div>
@@ -581,8 +585,8 @@ function MoneyBackChip({ p }: { p: Pick<Payment, "amount_refunded" | "dispute" |
   return null;
 }
 
-function DeliveryRow({ d, onRetry, onOpen, busy }: { d: Delivery; onRetry: () => void; onOpen?: () => void; busy: boolean }) {
-  const gaveUp = !d.delivered_at && d.attempts >= MAX_ATTEMPTS;
+function DeliveryRow({ d, max, onRetry, onOpen, busy }: { d: Delivery; max: number; onRetry: () => void; onOpen?: () => void; busy: boolean }) {
+  const gaveUp = !d.delivered_at && d.attempts >= max;
   const color = d.delivered_at ? "#22c55e" : gaveUp ? "#ef4444" : d.attempts > 0 ? "#f59e0b" : "#4da6ff";
   const label = d.delivered_at ? "delivered" : gaveUp ? "gave up" : d.attempts > 0 ? "retrying" : "sending";
   return (
@@ -607,7 +611,7 @@ function DeliveryRow({ d, onRetry, onOpen, busy }: { d: Delivery; onRetry: () =>
         </div>
       </div>
       <div style={{ color: "#9aa3b5", marginTop: 6, display: "flex", gap: 16, flexWrap: "wrap" }}>
-        <span>Attempts {d.attempts}/{MAX_ATTEMPTS}</span>
+        <span>Attempts {d.attempts}/{max}</span>
         {d.last_error && <span style={{ color: "#fca5a5" }}>Last error: {d.last_error}</span>}
         {d.delivered_at ? <span>Delivered {when(d.delivered_at)}</span> : !gaveUp && d.attempts > 0 && <span>Next try {when(d.next_attempt_at)}</span>}
         <code className="mono" style={{ wordBreak: "break-all" }}>{d.webhook_url ?? "no webhook URL"}</code>

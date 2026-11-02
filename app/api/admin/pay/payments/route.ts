@@ -8,6 +8,17 @@ export const dynamic = 'force-dynamic';
 
 const PAGE = 50;
 
+// An IANA timezone the runtime knows (e.g. "Europe/Budapest", "Africa/Bamako"), else null
+function validTimeZone(tz: string | null): string | null {
+  if (!tz || tz.length > 64 || !/^[A-Za-z_]+(\/[A-Za-z0-9_+-]+)*$/.test(tz)) return null;
+  try {
+    new Intl.DateTimeFormat('en', { timeZone: tz });
+    return tz;
+  } catch {
+    return null;
+  }
+}
+
 // GET ?status=&provider=&app=&q=<reference or id>&before=<payment id>: newest first, 50 per page, plus totals
 export async function GET(req: NextRequest) {
   if (!(await isPayAdmin(req))) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -28,14 +39,19 @@ export async function GET(req: NextRequest) {
 
   // Money kept from payments made through IDITECHS Pay only, per currency: succeeded, minus refunds and card disputes
   // that took the money back (open or lost). Store and WhatsApp sales are not here: each application counts those.
-  const now = new Date();
-  const dayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-  const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+  // "Today" and "this month" in the viewer's timezone (?tz=Europe/Budapest, sent by the /pay screen), UTC otherwise
+  const tz = validTimeZone(sp.get('tz')) ?? 'UTC';
+  const [{ day_start: dayStart, month_start: monthStart }] = await db.$queryRaw<{ day_start: Date; month_start: Date }[]>`
+    SELECT ((date_trunc('day', timezone(${tz}, now())) AT TIME ZONE ${tz}) AT TIME ZONE 'UTC') AS day_start,
+           ((date_trunc('month', timezone(${tz}, now())) AT TIME ZONE ${tz}) AT TIME ZONE 'UTC') AS month_start`;
   type Row = { app_id: string; currency: string; amount: bigint | number; returned: bigint | number; count: bigint | number };
+  // completed_at holds UTC without a timezone: compare with a plain UTC timestamp, so the database session's own
+  // timezone setting can never shift the boundary
+  const utc = (d: Date) => d.toISOString().replace('T', ' ').replace('Z', '');
   const net = (from: Date) => db.$queryRaw<Row[]>`
     SELECT app_id, currency, SUM(amount) AS amount, COUNT(*) AS count,
            SUM(LEAST(amount, amount_refunded + CASE WHEN dispute_status IN ('needs_response', 'under_review', 'lost') THEN dispute_amount ELSE 0 END)) AS returned
-      FROM pay_payments WHERE status = 'succeeded' AND completed_at >= ${from}
+      FROM pay_payments WHERE status = 'succeeded' AND completed_at >= ${utc(from)}::timestamp
      GROUP BY app_id, currency`;
   const [todayRows, monthRows, allRows, byStatus] = await Promise.all([
     net(dayStart),

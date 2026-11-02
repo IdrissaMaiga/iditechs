@@ -26,6 +26,8 @@ export const payConfig = {
   // Each app may create at most this many payments per minute, and ask the provider for a payment's status at most
   // once per this many seconds: the Stripe rate limit is shared with every other application on the account
   limits: { paymentsPerMinute: 30, refreshSeconds: 10 },
-  // App notifications: after the n-th failure wait 30s * 2^(n-1), so 8 attempts span about an hour
-  delivery: { maxAttempts: 8, baseDelaySeconds: 30, timeoutMs: 10_000 },
+  // App notifications: after the n-th failure wait 30s * 2^(n-1), at most 1 hour, so attempt 8 comes after about an hour
+  // and 78 attempts span about 3 days (enough for an app to come back from an outage). The owner gets a WhatsApp alert
+  // when a notification has failed for about an hour (warnAfterAttempts) and when it gives up.
+  delivery: { maxAttempts: 78, warnAfterAttempts: 8, baseDelaySeconds: 30, maxDelaySeconds: 3600, timeoutMs: 10_000 },
 };

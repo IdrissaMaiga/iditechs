@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { adminDelivery, isPayAdmin } from '@/lib/pay/admin';
+import { payConfig } from '@/lib/pay/config';
 import { attempt } from '@/lib/pay/deliveries';
 
 export const runtime = 'nodejs';
@@ -15,7 +16,7 @@ export async function GET(req: NextRequest) {
     take: 100,
     include: { app: { select: { name: true, webhookUrl: true } } },
   });
-  return NextResponse.json({ deliveries: rows.map(adminDelivery) });
+  return NextResponse.json({ deliveries: rows.map(adminDelivery), max_attempts: payConfig.delivery.maxAttempts });
 }
 
 // POST {"id":"<delivery id>"}: send it again now (also revives one that used up its retries)
