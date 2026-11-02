@@ -179,8 +179,9 @@ export function WaClient({ initialInstances }: { initialInstances: Instance[] })
   };
 
   const handlePair = async (inst: Instance) => {
-    const phone = pairPhone[inst.id];
-    if (!phone?.trim()) return;
+    // Defaults to the number saved for this instance
+    const phone = pairPhone[inst.id] ?? inst.phoneNumber ?? "";
+    if (!phone.trim()) return;
     const data = await api({ action: "pair", id: inst.id, phoneNumber: phone.replace(/\D/g, "") });
     if (data?.pairingCode) {
       setPairCode((prev) => ({ ...prev, [inst.id]: data.pairingCode }));
@@ -389,12 +390,12 @@ export function WaClient({ initialInstances }: { initialInstances: Instance[] })
                   <div style={{ display: "flex", gap: 4, alignItems: "center" }}>
                     <input
                       placeholder="Phone (e.g. 22377374782)"
-                      value={pairPhone[inst.id] ?? ""}
+                      value={pairPhone[inst.id] ?? inst.phoneNumber ?? ""}
                       onChange={(e) => setPairPhone((p) => ({ ...p, [inst.id]: e.target.value }))}
                       onKeyDown={(e) => e.key === "Enter" && handlePair(inst)}
                       style={{ ...inputStyle, width: 200, height: 34, fontSize: 13 }}
                     />
-                    <button onClick={() => handlePair(inst)} style={btnStyle("#1e293b")} disabled={loading || !pairPhone[inst.id]?.trim()}>
+                    <button onClick={() => handlePair(inst)} style={btnStyle("#1e293b")} disabled={loading || !(pairPhone[inst.id] ?? inst.phoneNumber ?? "").trim()}>
                       Pair
                     </button>
                   </div>

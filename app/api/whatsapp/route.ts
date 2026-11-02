@@ -28,16 +28,23 @@ async function syncStatuses<T extends { id: string; instanceId: string; status: 
   );
 }
 
-// Right after a drop the server keeps reconnecting to WhatsApp; between attempts QR and pairing calls
-// fail with "not connected". Keep asking for up to 30 s instead of failing on the first gap.
-async function whenReady<T>(fn: () => Promise<T>): Promise<T> {
-  const until = Date.now() + 30_000;
+// After WhatsApp drops a device the server may be between reconnects, or stuck: it answers "already
+// connecting" while its socket is gone. QR and pairing calls then fail with "not connected". Keep
+// asking; if it is still unreachable after 6 s, restart that instance once (fresh socket; its login is
+// already gone, so nothing is lost) and keep asking for up to 40 s in total.
+async function whenReady<T>(fn: () => Promise<T>, restart: () => Promise<unknown>): Promise<T> {
+  const started = Date.now();
+  let restarted = false;
   for (;;) {
     try {
       return await fn();
     } catch (e) {
       const msg = e instanceof Error ? e.message : "";
-      if (!/not connected|Connection Closed|not initialized/i.test(msg) || Date.now() > until) throw e;
+      if (!/not connected|Connection Closed|not initialized/i.test(msg) || Date.now() - started > 40_000) throw e;
+      if (!restarted && Date.now() - started > 6_000) {
+        restarted = true;
+        await restart().catch(() => {});
+      }
       await new Promise((r) => setTimeout(r, 2000));
     }
   }
@@ -152,7 +159,10 @@ export async function POST(req: NextRequest) {
       if ((await liveStatus(mcp, inst.instanceId)) !== "connected") {
         await mcp.call("wa_connect_instance", { instanceId: inst.instanceId }).catch(() => {});
       }
-      const result = (await whenReady(() => mcp.call("wa_get_qr_code", { instanceId: inst.instanceId }))) as Record<string, unknown>;
+      const result = (await whenReady(
+        () => mcp.call("wa_get_qr_code", { instanceId: inst.instanceId }),
+        () => mcp.call("wa_restart_instance", { instanceId: inst.instanceId }),
+      )) as Record<string, unknown>;
       const rawQr = (result.qrCode ?? result.qr ?? result.code ?? "") as string;
       let qrImage = rawQr;
       if (rawQr && !rawQr.startsWith("data:") && !rawQr.startsWith("http")) {
@@ -171,8 +181,9 @@ export async function POST(req: NextRequest) {
       if ((await liveStatus(mcp, inst.instanceId)) !== "connected") {
         await mcp.call("wa_connect_instance", { instanceId: inst.instanceId }).catch(() => {});
       }
-      const result = (await whenReady(() =>
-        mcp.call("wa_get_pairing_code", { instanceId: inst.instanceId, phoneNumber: clean }),
+      const result = (await whenReady(
+        () => mcp.call("wa_get_pairing_code", { instanceId: inst.instanceId, phoneNumber: clean }),
+        () => mcp.call("wa_restart_instance", { instanceId: inst.instanceId }),
       )) as Record<string, unknown>;
       const pairingCode = (result.pairingCode ?? result.code ?? "") as string;
       await db.waInstance.update({ where: { id }, data: { phoneNumber: clean, status: "pairing" } });
