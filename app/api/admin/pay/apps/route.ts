@@ -2,7 +2,7 @@ import crypto from 'crypto';
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { db } from '@/lib/db';
-import { isAdmin } from '@/lib/admin-auth';
+import { isPayAdmin } from '@/lib/pay/admin';
 import { hashKey } from '@/lib/pay/auth';
 import { newId } from '@/lib/pay/payments';
 
@@ -10,7 +10,7 @@ export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
 export async function GET(req: NextRequest) {
-  if (!isAdmin(req)) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  if (!(await isPayAdmin(req))) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   const apps = await db.payApp.findMany({
     orderBy: { createdAt: 'desc' },
     select: { id: true, name: true, apiKeyPrefix: true, webhookUrl: true, active: true, createdAt: true, _count: { select: { payments: true } } },
@@ -20,7 +20,7 @@ export async function GET(req: NextRequest) {
 
 // Issues credentials to an app that wants to take payments through IDITECHS Pay. The key and secret are shown once.
 export async function POST(req: NextRequest) {
-  if (!isAdmin(req)) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  if (!(await isPayAdmin(req))) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   const parsed = z
     .object({ name: z.string().trim().min(1).max(100), webhook_url: z.url().max(2000).optional() })
     .safeParse(await req.json().catch(() => null));

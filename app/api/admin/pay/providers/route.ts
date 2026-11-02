@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
-import { isAdmin } from '@/lib/admin-auth';
+import { isPayAdmin } from '@/lib/pay/admin';
 import { connectors, getConnector } from '@/lib/pay/connectors';
 import { setSwitch, switchedOff } from '@/lib/pay/switches';
 
@@ -19,13 +19,13 @@ async function state() {
 }
 
 export async function GET(req: NextRequest) {
-  if (!isAdmin(req)) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  if (!(await isPayAdmin(req))) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   return NextResponse.json({ providers: await state() });
 }
 
 // PUT {"provider":"wave","on":false}: switches a provider on or off for every app
 export async function PUT(req: NextRequest) {
-  if (!isAdmin(req)) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  if (!(await isPayAdmin(req))) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   const parsed = z.object({ provider: z.string(), on: z.boolean() }).safeParse(await req.json().catch(() => null));
   if (!parsed.success || !getConnector(parsed.data.provider)) {
     return NextResponse.json({ error: `provider must be one of ${connectors.map((c) => c.id).join(', ')}, on must be true or false` }, { status: 400 });
