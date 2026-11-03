@@ -35,10 +35,13 @@ export async function POST(req: NextRequest) {
 
   const from = str(body.from, 200).trim() || "unknown";
   const content = str(body.content, 8000);
-  const parsed = Date.parse(str(body.receive_time, 40).replace(" ", "T"));
-  const receivedAt = Number.isFinite(parsed) ? new Date(parsed) : new Date(Number(body.timestamp));
-  // SmsForwarder retries on failure: the same message must not appear twice
-  const dedupKey = createHash("sha256").update(`${kind}|${from}|${content}|${receivedAt.toISOString()}`).digest("hex");
+  // [receive_time] is the phone's local time with no zone, so the signed epoch timestamp is used instead
+  // (it is taken when the message is forwarded, seconds after it arrived).
+  const receivedAt = new Date(Number(body.timestamp));
+  // SmsForwarder retries on failure: the same message must not appear twice. A retry is re-signed with a
+  // new timestamp, so the key uses the phone's receive_time text when present.
+  const when = str(body.receive_time, 40) || String(body.timestamp);
+  const dedupKey = createHash("sha256").update(`${kind}|${from}|${content}|${when}`).digest("hex");
 
   await db.phoneEvent.upsert({
     where: { dedupKey },
