@@ -106,6 +106,8 @@ export function WaClient({ initialInstances }: { initialInstances: Instance[] })
         setInstances(data.instances);
         setLive(data.live !== false);
       }
+    } catch {
+      setLive(false);
     } finally {
       setLoading(false);
     }
@@ -113,8 +115,10 @@ export function WaClient({ initialInstances }: { initialInstances: Instance[] })
 
   // Keep statuses current: right away, then every 15 s while the tab is visible
   useEffect(() => {
+    let inFlight = false;
     const tick = () => {
-      if (document.visibilityState === "visible" && !busyRef.current) {
+      if (document.visibilityState === "visible" && !busyRef.current && !inFlight) {
+        inFlight = true;
         fetch("/api/whatsapp")
           .then((r) => r.json())
           .then((data) => {
@@ -123,7 +127,8 @@ export function WaClient({ initialInstances }: { initialInstances: Instance[] })
               setLive(data.live !== false);
             }
           })
-          .catch(() => setLive(false));
+          .catch(() => setLive(false))
+          .finally(() => { inFlight = false; });
       }
     };
     tick();
@@ -197,9 +202,12 @@ export function WaClient({ initialInstances }: { initialInstances: Instance[] })
     const next = [...(inst.tags ?? []), t];
     setInstances((prev) => prev.map((i) => (i.id === inst.id ? { ...i, tags: next } : i)));
     setTagInput("");
-    await api({ action: "tags", id: inst.id, tags: next });
-    await refresh();
-    busyRef.current = false;
+    try {
+      await api({ action: "tags", id: inst.id, tags: next });
+      await refresh();
+    } finally {
+      busyRef.current = false;
+    }
   };
 
   const handleRemoveTag = async (inst: Instance, tag: string) => {
@@ -207,9 +215,12 @@ export function WaClient({ initialInstances }: { initialInstances: Instance[] })
     busyRef.current = true;
     const next = (inst.tags ?? []).filter((t) => t !== tag);
     setInstances((prev) => prev.map((i) => (i.id === inst.id ? { ...i, tags: next } : i)));
-    await api({ action: "tags", id: inst.id, tags: next });
-    await refresh();
-    busyRef.current = false;
+    try {
+      await api({ action: "tags", id: inst.id, tags: next });
+      await refresh();
+    } finally {
+      busyRef.current = false;
+    }
   };
 
   const handleSaveWebhook = async (inst: Instance) => {

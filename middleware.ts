@@ -12,6 +12,8 @@ export function middleware(req: NextRequest) {
   const { pathname, searchParams } = req.nextUrl;
 
   if (redirects[pathname]) return NextResponse.redirect(publicUrl(redirects[pathname], req), 308);
+  // Internal route paths (/company/privacy, /company/en/terms) map to their public URLs
+  if (pathname.startsWith("/company/")) return NextResponse.redirect(publicUrl(pathname.slice("/company".length), req), 308);
   if (pathname === "/" && searchParams.get("lang") === "en") return NextResponse.redirect(publicUrl("/en", req), 308);
   if (pathname === "/links" || pathname.startsWith("/go/")) return NextResponse.next();
 

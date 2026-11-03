@@ -33,6 +33,7 @@ class WaMcp {
       method: "POST",
       headers,
       body: JSON.stringify(payload),
+      signal: AbortSignal.timeout(15_000),
     });
     if (!this.sid) {
       this.sid = res.headers.get("mcp-session-id");
@@ -46,7 +47,7 @@ class WaMcp {
   }
 
   async init(): Promise<void> {
-    await this.post({
+    const r = await this.post({
       jsonrpc: "2.0",
       id: 1,
       method: "initialize",
@@ -56,6 +57,7 @@ class WaMcp {
         clientInfo: { name: "iditechs-wa", version: "1" },
       },
     });
+    if (!r.result) throw new Error(`WhatsApp server handshake failed: ${JSON.stringify(r.error ?? r).slice(0, 300)}`);
     await this.post({ jsonrpc: "2.0", method: "notifications/initialized" });
   }
 
@@ -108,8 +110,10 @@ export async function liveInstances(mcp: WaMcp): Promise<Map<string, LiveInstanc
     phoneNumber: string | null;
     lastConnected: string | number | null;
   }> | null;
+  // A malformed answer must not read as "no instances" (that would mark every line gone)
+  if (!Array.isArray(list)) throw new Error("whatsapp://instances returned no list");
   const map = new Map<string, LiveInstance>();
-  for (const i of list ?? []) {
+  for (const i of list) {
     // qr_pending is already the "scan me" state; keep it
     const last = i.lastConnected ? new Date(i.lastConnected).getTime() : 0;
     const down = (i.status === "connecting" || i.status === "disconnected") && Date.now() - last > OFFLINE_AFTER_MS;
