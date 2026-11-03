@@ -156,6 +156,23 @@ model WaInstance {
   @@map("wa_instances")
 }
 
+// SMS, calls and notifications forwarded from the owner's Android phone (SmsForwarder webhook)
+model PhoneEvent {
+  id         String   @id @default(cuid())
+  kind       String // sms | call | app
+  from       String
+  content    String
+  simInfo    String?  @map("sim_info")
+  device     String?
+  receivedAt DateTime @map("received_at")
+  read       Boolean  @default(false)
+  dedupKey   String   @unique @map("dedup_key")
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  @@index([receivedAt])
+  @@map("phone_events")
+}
+
 model CampaignClick {
   id         String   @id @default(cuid())
   campaignId String   @map("campaign_id")
